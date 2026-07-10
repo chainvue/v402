@@ -50,6 +50,18 @@ importers:
 
   packages/test-vectors: {}
 
+  packages/verifier:
+    dependencies:
+      '@chainvue/v402-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@chainvue/v402-storage':
+        specifier: workspace:*
+        version: link:../storage
+      '@chainvue/v402-verus-rpc':
+        specifier: workspace:*
+        version: link:../verus-rpc
+
   packages/verus-rpc:
     dependencies:
       cockatiel:
