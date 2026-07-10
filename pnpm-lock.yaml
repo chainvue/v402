@@ -27,6 +27,8 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
+  packages/test-vectors: {}
+
 packages:
 
   '@emnapi/core@1.11.1':

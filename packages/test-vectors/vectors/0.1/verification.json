@@ -1,0 +1,72 @@
+{
+  "category": "verification",
+  "generator": "scripts/generate-vectors.ts",
+  "network": "vrsctest",
+  "daemon": "1.2.17",
+  "note": "Every case was confirmed against verusd verifymessage at generation time. `reason` is informative — implementations must match `accept`.",
+  "cases": [
+    {
+      "name": "accept-valid-address-signature",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "signature": "IGlpjgseEaUSpdxY94wzpxF+JvxAoyJoWJAoeJhkKjT6Y/sdOtkc/NzXnyUOwNcOA2UNvKVnpIzqKnMh8Qawjr0=",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "accept": true
+      }
+    },
+    {
+      "name": "accept-valid-identity-signature",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "fum@",
+        "signature": "AfVmEQABQSBpi9PmKz+CTXdwkrYMCw0yQKK+d9QugZvJkSJugdeNDkV7d2BsU+JVJqBFzkXdF7vbXRpHVH3Was5Q1lulysb5",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "accept": true
+      }
+    },
+    {
+      "name": "reject-tampered-message",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "signature": "IGlpjgseEaUSpdxY94wzpxF+JvxAoyJoWJAoeJhkKjT6Y/sdOtkc/NzXnyUOwNcOA2UNvKVnpIzqKnMh8Qawjr0=",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.002\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "accept": false,
+        "reason": "signature-mismatch"
+      }
+    },
+    {
+      "name": "reject-wrong-signer",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "signature": "IIK5F6aeUIdvBA5lSWai6CWCnVmLEQni5/8aO6pqP5n1Uq8QEJYkPNFdFqBygyYzin/7/bYw/N+k2N+wyK4Cggg=",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "accept": false,
+        "reason": "signature-mismatch"
+      }
+    },
+    {
+      "name": "reject-malformed-base64",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "signature": "not-base64!",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "accept": false,
+        "reason": "malformed-signature-encoding"
+      }
+    }
+  ]
+}

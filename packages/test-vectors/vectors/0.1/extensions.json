@@ -1,0 +1,173 @@
+{
+  "category": "extensions",
+  "generator": "scripts/generate-vectors.ts",
+  "cases": [
+    {
+      "name": "serialize-sorts-input",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "serialize",
+        "fields": [
+          {
+            "key": "x-mystartup.orderId",
+            "value": "ord_12345"
+          },
+          {
+            "key": "iana.reserved",
+            "value": "x"
+          },
+          {
+            "key": "scheme.bodyHash",
+            "value": "sha256:abc"
+          }
+        ]
+      },
+      "expected": {
+        "block": "iana.reserved: x\nscheme.bodyHash: sha256:abc\nx-mystartup.orderId: ord_12345"
+      }
+    },
+    {
+      "name": "serialize-duplicate-key",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "serialize",
+        "fields": [
+          {
+            "key": "scheme.bodyHash",
+            "value": "a"
+          },
+          {
+            "key": "scheme.bodyHash",
+            "value": "b"
+          }
+        ]
+      },
+      "expected": {
+        "error": "extensions-duplicate-key"
+      }
+    },
+    {
+      "name": "serialize-unknown-prefix",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "serialize",
+        "fields": [
+          {
+            "key": "foo.bar",
+            "value": "v"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid-extension-key"
+      }
+    },
+    {
+      "name": "serialize-value-leading-space",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "serialize",
+        "fields": [
+          {
+            "key": "scheme.bodyHash",
+            "value": " a"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid-extension-value"
+      }
+    },
+    {
+      "name": "parse-round-trip",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "parse",
+        "block": "scheme.bodyHash: sha256:abc\nx-mystartup.orderId: ord_12345"
+      },
+      "expected": {
+        "fields": [
+          {
+            "key": "scheme.bodyHash",
+            "value": "sha256:abc"
+          },
+          {
+            "key": "x-mystartup.orderId",
+            "value": "ord_12345"
+          }
+        ]
+      }
+    },
+    {
+      "name": "parse-value-with-colons",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "parse",
+        "block": "scheme.bodyHash: sha256:a: b"
+      },
+      "expected": {
+        "fields": [
+          {
+            "key": "scheme.bodyHash",
+            "value": "sha256:a: b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "parse-empty-block",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "parse",
+        "block": ""
+      },
+      "expected": {
+        "fields": []
+      }
+    },
+    {
+      "name": "parse-unsorted",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "parse",
+        "block": "x-a.b: 1\nscheme.bodyHash: a"
+      },
+      "expected": {
+        "error": "extensions-unsorted"
+      }
+    },
+    {
+      "name": "parse-duplicate-key",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "parse",
+        "block": "scheme.bodyHash: a\nscheme.bodyHash: b"
+      },
+      "expected": {
+        "error": "extensions-duplicate-key"
+      }
+    },
+    {
+      "name": "parse-trailing-newline",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "parse",
+        "block": "scheme.bodyHash: a\n"
+      },
+      "expected": {
+        "error": "invalid-extension-block"
+      }
+    },
+    {
+      "name": "parse-crlf-separators",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "parse",
+        "block": "iana.a: 1\r\nscheme.bodyHash: a"
+      },
+      "expected": {
+        "error": "invalid-extension-block"
+      }
+    }
+  ]
+}

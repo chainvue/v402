@@ -1,0 +1,28 @@
+{
+  "name": "@chainvue/v402-test-vectors",
+  "version": "0.1.0",
+  "description": "Normative reference test vectors for the v402 payment protocol (verus-prepaid-sig/0.1). JSON fixtures for conformance-testing v402 implementations in any language.",
+  "license": "CC-BY-4.0",
+  "author": "Robert Lech (chainvue)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vectors/*": "./vectors/*"
+  },
+  "files": [
+    "dist",
+    "vectors"
+  ],
+  "scripts": {
+    "sync": "node scripts/sync-vectors.mjs",
+    "build": "pnpm run sync && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  }
+}

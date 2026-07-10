@@ -1,0 +1,364 @@
+{
+  "category": "wire-format",
+  "generator": "scripts/generate-vectors.ts",
+  "cases": [
+    {
+      "name": "payment402-normative",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "payment402",
+        "value": {
+          "version": "v402/0.1",
+          "accepts": [
+            {
+              "scheme": "verus-prepaid-sig",
+              "schemeVersion": "0.1",
+              "network": "vrsctest",
+              "asset": "VRSCTEST",
+              "amount": "0.001",
+              "amountUnit": "human",
+              "payTo": "explorerAPI@",
+              "facilitator": "https://facilitator.local/v1",
+              "requiredHeaders": [
+                "X-V402-Scheme",
+                "X-V402-Payer",
+                "X-V402-Amount",
+                "X-V402-Request-Id",
+                "X-V402-Issued-At",
+                "X-V402-Signature"
+              ],
+              "canonicalDomain": "explorer.example.com",
+              "topup": {
+                "depositAddress": "explorerAPI@",
+                "attribution": "sender-verusid"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "name": "payment402-tolerates-unknown-scheme-entry",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "payment402",
+        "value": {
+          "version": "v402/0.1",
+          "accepts": [
+            {
+              "scheme": "verus-prepaid-sig",
+              "schemeVersion": "0.1",
+              "network": "vrsctest",
+              "asset": "VRSCTEST",
+              "amount": "0.001",
+              "amountUnit": "human",
+              "payTo": "explorerAPI@",
+              "facilitator": "https://facilitator.local/v1",
+              "requiredHeaders": [
+                "X-V402-Scheme",
+                "X-V402-Payer",
+                "X-V402-Amount",
+                "X-V402-Request-Id",
+                "X-V402-Issued-At",
+                "X-V402-Signature"
+              ],
+              "canonicalDomain": "explorer.example.com",
+              "topup": {
+                "depositAddress": "explorerAPI@",
+                "attribution": "sender-verusid"
+              }
+            },
+            {
+              "scheme": "evm-eip3009",
+              "schemeVersion": "1.0",
+              "someEvmField": true
+            }
+          ]
+        }
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "name": "payment402-missing-version",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "payment402",
+        "value": {
+          "accepts": [
+            {
+              "scheme": "verus-prepaid-sig",
+              "schemeVersion": "0.1",
+              "network": "vrsctest",
+              "asset": "VRSCTEST",
+              "amount": "0.001",
+              "amountUnit": "human",
+              "payTo": "explorerAPI@",
+              "facilitator": "https://facilitator.local/v1",
+              "requiredHeaders": [
+                "X-V402-Scheme",
+                "X-V402-Payer",
+                "X-V402-Amount",
+                "X-V402-Request-Id",
+                "X-V402-Issued-At",
+                "X-V402-Signature"
+              ],
+              "canonicalDomain": "explorer.example.com",
+              "topup": {
+                "depositAddress": "explorerAPI@",
+                "attribution": "sender-verusid"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "name": "requirement-normative",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentRequirement",
+        "value": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "amountUnit": "human",
+          "payTo": "explorerAPI@",
+          "facilitator": "https://facilitator.local/v1",
+          "requiredHeaders": [
+            "X-V402-Scheme",
+            "X-V402-Payer",
+            "X-V402-Amount",
+            "X-V402-Request-Id",
+            "X-V402-Issued-At",
+            "X-V402-Signature"
+          ],
+          "canonicalDomain": "explorer.example.com",
+          "topup": {
+            "depositAddress": "explorerAPI@",
+            "attribution": "sender-verusid"
+          }
+        }
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "name": "requirement-keeps-unknown-fields",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentRequirement",
+        "value": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "amountUnit": "human",
+          "payTo": "explorerAPI@",
+          "facilitator": "https://facilitator.local/v1",
+          "requiredHeaders": [
+            "X-V402-Scheme",
+            "X-V402-Payer",
+            "X-V402-Amount",
+            "X-V402-Request-Id",
+            "X-V402-Issued-At",
+            "X-V402-Signature"
+          ],
+          "canonicalDomain": "explorer.example.com",
+          "topup": {
+            "depositAddress": "explorerAPI@",
+            "attribution": "sender-verusid"
+          },
+          "futureField": "x"
+        }
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "name": "requirement-bad-amount-unit",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentRequirement",
+        "value": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "amountUnit": "sats",
+          "payTo": "explorerAPI@",
+          "facilitator": "https://facilitator.local/v1",
+          "requiredHeaders": [
+            "X-V402-Scheme",
+            "X-V402-Payer",
+            "X-V402-Amount",
+            "X-V402-Request-Id",
+            "X-V402-Issued-At",
+            "X-V402-Signature"
+          ],
+          "canonicalDomain": "explorer.example.com",
+          "topup": {
+            "depositAddress": "explorerAPI@",
+            "attribution": "sender-verusid"
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "name": "requirement-empty-required-headers",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentRequirement",
+        "value": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "amountUnit": "human",
+          "payTo": "explorerAPI@",
+          "facilitator": "https://facilitator.local/v1",
+          "requiredHeaders": [],
+          "canonicalDomain": "explorer.example.com",
+          "topup": {
+            "depositAddress": "explorerAPI@",
+            "attribution": "sender-verusid"
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "name": "discovery-normative",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "discovery",
+        "value": {
+          "specUrl": "https://v402.dev/spec/",
+          "supportedVersions": [
+            "v402/0.1"
+          ],
+          "defaultVersion": "v402/0.1",
+          "deprecatedVersions": [],
+          "sunsetDates": {},
+          "supportedExtensions": [
+            "scheme.bodyHash"
+          ]
+        }
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "name": "discovery-missing-supported-versions",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "discovery",
+        "value": {
+          "defaultVersion": "v402/0.1"
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "name": "headers-valid",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentHeaders",
+        "value": {
+          "x-v402-scheme": "verus-prepaid-sig",
+          "x-v402-payer": "v402test.demoAgent@",
+          "x-v402-amount": "0.001",
+          "x-v402-request-id": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "x-v402-issued-at": "1783650000",
+          "x-v402-signature": "AgQ2Zml0eXNpZ25hdHVyZQ=="
+        }
+      },
+      "expected": {
+        "valid": true,
+        "claim": {
+          "scheme": "verus-prepaid-sig",
+          "payer": "v402test.demoAgent@",
+          "amount": "0.001",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000,
+          "signature": "AgQ2Zml0eXNpZ25hdHVyZQ=="
+        }
+      }
+    },
+    {
+      "name": "headers-missing-signature",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentHeaders",
+        "value": {
+          "x-v402-scheme": "verus-prepaid-sig",
+          "x-v402-payer": "v402test.demoAgent@",
+          "x-v402-amount": "0.001",
+          "x-v402-request-id": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "x-v402-issued-at": "1783650000"
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "name": "headers-base64url-signature",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentHeaders",
+        "value": {
+          "x-v402-scheme": "verus-prepaid-sig",
+          "x-v402-payer": "v402test.demoAgent@",
+          "x-v402-amount": "0.001",
+          "x-v402-request-id": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "x-v402-issued-at": "1783650000",
+          "x-v402-signature": "AgQ2-_l0eXNpZ25hdHVyZQ=="
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "name": "headers-bad-request-id",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentHeaders",
+        "value": {
+          "x-v402-scheme": "verus-prepaid-sig",
+          "x-v402-payer": "v402test.demoAgent@",
+          "x-v402-amount": "0.001",
+          "x-v402-request-id": "not-a-ulid",
+          "x-v402-issued-at": "1783650000",
+          "x-v402-signature": "AgQ2Zml0eXNpZ25hdHVyZQ=="
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    }
+  ]
+}

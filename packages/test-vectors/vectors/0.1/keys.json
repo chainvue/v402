@@ -1,0 +1,25 @@
+{
+  "comment": "PUBLIC test keys for v402 reference test vectors. Deliberately published — anyone can re-derive them from the documented seeds. NEVER fund these addresses; anything sent to them is publicly spendable.",
+  "derivation": "privkey = sha256(utf8(seed)); WIF = base58check(0xBC || privkey || 0x01) — Verus/Komodo mainnet+testnet WIF prefix, compressed public key",
+  "network": "vrsctest",
+  "keys": [
+    {
+      "id": "A",
+      "seed": "v402-test-vectors/0.1 key A",
+      "wif": "Uw81VDAH8zrvbGJLfo1nfLaWN9tnGMo2U3bB81Zg8MKBvakrNXqP",
+      "address": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT"
+    },
+    {
+      "id": "B",
+      "seed": "v402-test-vectors/0.1 key B",
+      "wif": "UsLMFdPY9HhXk7P9M6vuQweEaC9cNxQmWsbn7oJnc9z6qiKA55vd",
+      "address": "RLjrXPziU4Moc13vc2vGMvNpMmfM7ozZir"
+    }
+  ],
+  "identities": [
+    {
+      "name": "fum@",
+      "note": "Steward-controlled VRSCTEST identity used for identity-signature cases. VerusID signatures embed the signing block height, so these cases assert verify-validity, not byte-equality; only the spec steward can regenerate them."
+    }
+  ]
+}

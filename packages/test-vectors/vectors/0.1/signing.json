@@ -1,0 +1,99 @@
+{
+  "category": "signing",
+  "generator": "scripts/generate-vectors.ts",
+  "network": "vrsctest",
+  "daemon": "1.2.17",
+  "note": "assert=signature-equal cases are byte-reproducible from the WIF (signmessage is deterministic). assert=verify-only cases (VerusID) embed the signing block height; validate them via verifymessage instead of byte comparison.",
+  "cases": [
+    {
+      "name": "key-a-get-minimal",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "wif": "Uw81VDAH8zrvbGJLfo1nfLaWN9tnGMo2U3bB81Zg8MKBvakrNXqP",
+        "messageRef": "get-minimal",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "signature": "IGlpjgseEaUSpdxY94wzpxF+JvxAoyJoWJAoeJhkKjT6Y/sdOtkc/NzXnyUOwNcOA2UNvKVnpIzqKnMh8Qawjr0=",
+        "hash": "d41eee4ec50c8812500edeb37dcc3a7831b9986e617426ad7bbef9f9715a3753",
+        "assert": "signature-equal"
+      }
+    },
+    {
+      "name": "key-a-post-with-extensions",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "wif": "Uw81VDAH8zrvbGJLfo1nfLaWN9tnGMo2U3bB81Zg8MKBvakrNXqP",
+        "messageRef": "post-with-extensions",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: example.com\nmethod: POST\npath: /api/upload\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.005\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000\nscheme.bodyHash: sha256:a1b2c3d4e5f6\nx-mystartup.orderId: ord_12345"
+      },
+      "expected": {
+        "signature": "H1v57SHGptQnxHB7zNk4Mb68cLe7OCDZNuaSJrt5bV4nLQpTvO7eh1XtY3zDb0l9Zimlro3UWJA8BRRB7QIbWoA=",
+        "hash": "8704cc1ac0b89b881eb8b79fb716a3229b87f7e2aea9be793c6062ccdb4057f1",
+        "assert": "signature-equal"
+      }
+    },
+    {
+      "name": "key-a-unicode-payer",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "wif": "Uw81VDAH8zrvbGJLfo1nfLaWN9tnGMo2U3bB81Zg8MKBvakrNXqP",
+        "messageRef": "unicode-payer",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402.日本語@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "signature": "H+LF4uFeLOCBl1Xd+fCmtNNVSKTFHh/KseZHE2jRUUloA9r1b9lk7FYTmhVT6aqYcD0xFhNM8Imi4Cy9iLve1Jo=",
+        "hash": "0e27d6d3dc0cdb186cf592953bef06db7890fab87e14acbc7fcbf66c3a85fe57",
+        "assert": "signature-equal"
+      }
+    },
+    {
+      "name": "key-a-balance-query",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
+        "wif": "Uw81VDAH8zrvbGJLfo1nfLaWN9tnGMo2U3bB81Zg8MKBvakrNXqP",
+        "messageRef": "balance-query",
+        "message": "v402-balance-query/0.1\ncanonicalDomain: facilitator.example.com\nnetwork: vrsctest\npayer: v402.demoAgent@\nrequestId: 01H8XGABCDEF0123456789QRST\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "signature": "HyRe7dVLqURE8MWTD7KqeWmw9tohgleF/8SSkQVoTFyLfHUo2Ajtk1uVNXSiph2F9MxsyMQ5LswFjifGhEUfnPM=",
+        "hash": "b00328555f3248d3b9cf3704200dd45e5dfbd7d632780f94b68bbdc2511a809a",
+        "assert": "signature-equal"
+      }
+    },
+    {
+      "name": "key-b-get-minimal",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "RLjrXPziU4Moc13vc2vGMvNpMmfM7ozZir",
+        "wif": "UsLMFdPY9HhXk7P9M6vuQweEaC9cNxQmWsbn7oJnc9z6qiKA55vd",
+        "messageRef": "get-minimal",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "signature": "IIK5F6aeUIdvBA5lSWai6CWCnVmLEQni5/8aO6pqP5n1Uq8QEJYkPNFdFqBygyYzin/7/bYw/N+k2N+wyK4Cggg=",
+        "hash": "d41eee4ec50c8812500edeb37dcc3a7831b9986e617426ad7bbef9f9715a3753",
+        "assert": "signature-equal"
+      }
+    },
+    {
+      "name": "identity-get-minimal",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "signer": "fum@",
+        "wif": null,
+        "messageRef": "get-minimal",
+        "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      },
+      "expected": {
+        "signature": "AfVmEQABQSBpi9PmKz+CTXdwkrYMCw0yQKK+d9QugZvJkSJugdeNDkV7d2BsU+JVJqBFzkXdF7vbXRpHVH3Was5Q1lulysb5",
+        "hash": "d41eee4ec50c8812500edeb37dcc3a7831b9986e617426ad7bbef9f9715a3753",
+        "assert": "verify-only"
+      }
+    }
+  ]
+}
