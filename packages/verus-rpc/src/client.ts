@@ -115,8 +115,11 @@ export class VerusRpcClient implements IVerusRpc {
     return this.call("signmessage", [signer, message]);
   }
 
-  verifyMessage(signer: string, signature: string, message: string): Promise<boolean> {
-    return this.call("verifymessage", [signer, signature, message]);
+  verifyMessage(signer: string, signature: string, message: string, checkLatest?: boolean): Promise<boolean> {
+    return this.call(
+      "verifymessage",
+      checkLatest === undefined ? [signer, signature, message] : [signer, signature, message, checkLatest],
+    );
   }
 
   sendCurrency(fromAddress: string, outputs: SendCurrencyOutput[]): Promise<string> {

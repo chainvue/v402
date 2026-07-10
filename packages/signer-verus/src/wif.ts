@@ -26,6 +26,29 @@ function base58Decode(encoded: string): Uint8Array {
   return out;
 }
 
+/** Verus identity (i-address) base58check version byte. */
+const IADDRESS_PREFIX = 0x66;
+
+/**
+ * Decode a Verus i-address (identity or chain/system id, e.g.
+ * `iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma`) to its raw 20-byte hash160 — the
+ * byte form serialized into identity-signature digests.
+ */
+export function decodeIAddress(address: string): Uint8Array {
+  const decoded = base58Decode(address);
+  if (decoded.length !== 25) {
+    throw new Error(`invalid i-address: expected 25 bytes (version+hash160+checksum), got ${decoded.length}`);
+  }
+  const payload = decoded.subarray(0, 21);
+  const checksum = decoded.subarray(21);
+  const expected = sha256(sha256(payload)).subarray(0, 4);
+  if (!Buffer.from(checksum).equals(Buffer.from(expected))) throw new Error("invalid i-address: checksum mismatch");
+  if (payload[0] !== IADDRESS_PREFIX) {
+    throw new Error(`invalid i-address: expected version 0x${IADDRESS_PREFIX.toString(16)}, got 0x${payload[0]!.toString(16)}`);
+  }
+  return Uint8Array.from(payload.subarray(1));
+}
+
 /**
  * Decode a Verus WIF private key: base58check(0xBC || privkey32 || 0x01).
  * Only compressed keys are supported — everything v402 publishes/uses is

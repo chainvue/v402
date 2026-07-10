@@ -155,6 +155,13 @@ describe("verifyAndReserve — happy paths", () => {
     expect((await storage.getSpentRequest(REQUEST_ID))?.status).toBe("reserved");
   });
 
+  it("verifies against the LATEST identity state (checkLatest=true) so key rotation/revocation bite immediately", async () => {
+    const { verifier, rpc } = await setup({ balanceSats: 100_000n });
+    await verifier.verifyAndReserve(requestFor(), POLICY);
+    const verifyCall = rpc.calls.find((c) => c.method === "verifyMessage");
+    expect(verifyCall?.params[3]).toBe(true);
+  });
+
   it("appends validated extensions verbatim to the canonical payload", async () => {
     const body = Buffer.from('{"query":"{ blocks }"}', "utf8");
     const fields: ExtensionField[] = [

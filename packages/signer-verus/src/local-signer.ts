@@ -3,13 +3,23 @@ import { signAddressMessage, signIdentityMessage } from "./sign.js";
 import { decodeWif } from "./wif.js";
 import type { HeightProvider, Signer } from "./types.js";
 
+export interface LocalSignerIdentity {
+  /** The signing identity's i-address, e.g. iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma for v402test@. */
+  identityAddress: string;
+  /** Chain/system i-address the signature is bound to, e.g. iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq for VRSCTEST. */
+  systemId: string;
+}
+
 export interface LocalSignerOptions {
   /**
-   * Sign as this VerusID (identity-signature format, requires heightProvider).
-   * Without it the signer produces plain address signatures — verifiable
-   * against the key's R-address only, NOT against an identity name.
+   * Sign as a VerusID (identity-signature format, requires heightProvider).
+   * Identity digests bind the chain and the identity's i-address, so both
+   * are required — resolve them once via `getidentity` (identityaddress,
+   * systemid) or the facilitator discovery. Without this option the signer
+   * produces plain address signatures — verifiable against the key's
+   * R-address only, NOT against an identity name.
    */
-  identity?: string;
+  identity?: LocalSignerIdentity;
   /** Recent-block source for identity signatures (facilitator health, getblockcount, …). */
   heightProvider?: HeightProvider;
 }
@@ -31,8 +41,8 @@ export class LocalKeySigner implements Signer {
 
   async signMessage(message: string): Promise<string> {
     if (this.options.identity !== undefined) {
-      const height = await this.options.heightProvider!();
-      return signIdentityMessage(message, this.privateKey, height);
+      const blockHeight = await this.options.heightProvider!();
+      return signIdentityMessage(message, this.privateKey, { blockHeight, ...this.options.identity });
     }
     return signAddressMessage(message, this.privateKey);
   }

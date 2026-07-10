@@ -11,8 +11,11 @@ import {
   FileSigner,
   LocalKeySigner,
   NodeSigner,
+  decodeIAddress,
   decodeWif,
   signAddressMessage,
+  signIdentityMessage,
+  verusIdentitySignDigest,
   verusMessageHash,
   verusSignDigest,
   wrapIdentitySignature,
@@ -93,36 +96,69 @@ describe("local signing — daemon compatibility via the reference vectors", () 
   });
 });
 
-describe("identity signature wrapping", () => {
-  // real daemon output: signmessage "fum@" "v402 determinism probe" at height 1140465
+describe("identity signatures (v402test@ / VRSCTEST)", () => {
+  // real daemon output: signmessage "v402test@" "v402 height-window probe"
+  // at height 1141273. v402test@'s only primary address is test key A, so
+  // the daemon's inner compact signature must recover key A's pubkey over
+  // OUR identity digest — the offline proof of the digest construction.
   const DAEMON_IDENTITY_SIG =
-    "AfFmEQABQR+rFabK9rn2+h+Rj7IRbML0rHfhsEKxQ+jY0yjnmscoNkhSOTr5JagzCsSc7T6ZAElYFXRnETyIDQPIHyrIXWOd";
+    "ARlqEQABQR+tkzYBpTgEU+da7ZSxL/rhWQdE6PlYndvFBb+MVg4rJUJg6NMXKbIDCBsdKcVKMpWSjNSKhFC/lakv6FPAA6sQ";
+  const MESSAGE = "v402 height-window probe";
+  const HEIGHT = 1_141_273;
+  const IDENTITY = {
+    identityAddress: "iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma", // v402test@
+    systemId: "iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq", // VRSCTEST
+  };
+  const identityDigest = () =>
+    verusIdentitySignDigest(MESSAGE, decodeIAddress(IDENTITY.systemId), HEIGHT, decodeIAddress(IDENTITY.identityAddress));
 
-  it("round-trips the daemon's identity signature format exactly", () => {
+  function recoverOverDigest(compact65: Buffer, digest: Uint8Array): string {
+    const signature = secp256k1.Signature.fromBytes(compact65.subarray(1), "compact").addRecoveryBit(compact65[0]! - 27 - 4);
+    return Buffer.from(signature.recoverPublicKey(digest).toBytes(true)).toString("hex");
+  }
+
+  it("round-trips the daemon's identity signature envelope exactly", () => {
     const raw = Buffer.from(DAEMON_IDENTITY_SIG, "base64");
     expect(raw).toHaveLength(72);
     expect(raw[0]).toBe(0x01); // version
-    const height = raw.readUInt32LE(1);
-    expect(height).toBe(1_140_465);
+    expect(raw.readUInt32LE(1)).toBe(HEIGHT);
     expect(raw[5]).toBe(0x01); // one signature
     expect(raw[6]).toBe(0x41); // 65-byte entry
-    const compact = raw.subarray(7).toString("base64");
-    expect(wrapIdentitySignature(compact, height)).toBe(DAEMON_IDENTITY_SIG);
+    expect(wrapIdentitySignature(raw.subarray(7).toString("base64"), HEIGHT)).toBe(DAEMON_IDENTITY_SIG);
+  });
+
+  it("the DAEMON's identity signature recovers key A over OUR identity digest (offline digest proof)", () => {
+    // identity digest = sha256(ser(prefix) || systemID || height LE32 || idID || msgHash)
+    // — binds chain, height and identity; a plain address digest would NOT recover key A here
+    const raw = Buffer.from(DAEMON_IDENTITY_SIG, "base64");
+    const expectedPubkey = Buffer.from(secp256k1.getPublicKey(decodeWif(KEY_A_WIF), true)).toString("hex");
+    expect(recoverOverDigest(Buffer.from(raw.subarray(7)), identityDigest())).toBe(expectedPubkey);
+    expect(recoverOverDigest(Buffer.from(raw.subarray(7)), verusSignDigest(MESSAGE))).not.toBe(expectedPubkey);
+  });
+
+  it("our identity signature signs the identity digest and embeds the height", () => {
+    const signature = signIdentityMessage(MESSAGE, decodeWif(KEY_A_WIF), { blockHeight: HEIGHT, ...IDENTITY });
+    const raw = Buffer.from(signature, "base64");
+    expect(raw).toHaveLength(72);
+    expect(raw.readUInt32LE(1)).toBe(HEIGHT);
+    const expectedPubkey = Buffer.from(secp256k1.getPublicKey(decodeWif(KEY_A_WIF), true)).toString("hex");
+    expect(recoverOverDigest(Buffer.from(raw.subarray(7)), identityDigest())).toBe(expectedPubkey);
   });
 
   it("requires a height provider for identity mode", () => {
-    expect(() => new LocalKeySigner(KEY_A_WIF, { identity: "v402.demoAgent@" })).toThrow(/heightProvider/);
+    expect(() => new LocalKeySigner(KEY_A_WIF, { identity: IDENTITY })).toThrow(/heightProvider/);
   });
 
-  it("signs identity messages with the provided height", async () => {
-    const signer = new LocalKeySigner(KEY_A_WIF, {
-      identity: "v402.demoAgent@",
-      heightProvider: async () => 1_140_465,
-    });
-    const signature = Buffer.from(await signer.signMessage("test"), "base64");
-    expect(signature).toHaveLength(72);
-    expect(signature.readUInt32LE(1)).toBe(1_140_465);
-    expect(signature.subarray(7).toString("base64")).toBe(signAddressMessage("test", decodeWif(KEY_A_WIF)));
+  it("LocalKeySigner identity mode signs via the height provider", async () => {
+    const signer = new LocalKeySigner(KEY_A_WIF, { identity: IDENTITY, heightProvider: async () => HEIGHT });
+    expect(await signer.signMessage(MESSAGE)).toBe(
+      signIdentityMessage(MESSAGE, decodeWif(KEY_A_WIF), { blockHeight: HEIGHT, ...IDENTITY }),
+    );
+  });
+
+  it("decodeIAddress rejects R-addresses and garbage", () => {
+    expect(() => decodeIAddress("RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT")).toThrow(/version/);
+    expect(() => decodeIAddress("not-an-address")).toThrow();
   });
 });
 

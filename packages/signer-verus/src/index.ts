@@ -4,10 +4,11 @@ export {
   LocalKeySigner,
   EnvSigner,
   FileSigner,
+  type LocalSignerIdentity,
   type LocalSignerOptions,
   type EnvSignerOptions,
   type FileSignerOptions,
 } from "./local-signer.js";
-export { verusMessageHash, verusSignDigest } from "./message-hash.js";
-export { signAddressMessage, signIdentityMessage, wrapIdentitySignature } from "./sign.js";
-export { decodeWif } from "./wif.js";
+export { verusIdentitySignDigest, verusMessageHash, verusSignDigest } from "./message-hash.js";
+export { signAddressMessage, signIdentityMessage, wrapIdentitySignature, type IdentitySignOptions } from "./sign.js";
+export { decodeIAddress, decodeWif } from "./wif.js";

@@ -1,5 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { verusSignDigest } from "./message-hash.js";
+import { verusIdentitySignDigest, verusSignDigest } from "./message-hash.js";
+import { decodeIAddress } from "./wif.js";
 
 /**
  * Sign a message compatibly with `verusd signmessage <R-address>`: RFC 6979
@@ -15,10 +16,14 @@ import { verusSignDigest } from "./message-hash.js";
  * daemon by verifymessage in the gated integration suite.
  */
 export function signAddressMessage(message: string, privateKey: Uint8Array): string {
-  const hash = verusSignDigest(message);
+  return signCompactBase64(verusSignDigest(message), privateKey);
+}
+
+/** RFC 6979 low-S ECDSA over a 32-byte digest, 65-byte recoverable compact form, Base64. */
+function signCompactBase64(digest: Uint8Array, privateKey: Uint8Array): string {
   // extraEntropy: false = pure RFC 6979 — noble v2 defaults to hedged nonces,
   // verusd does not; byte-equality with the daemon requires determinism
-  const signature = secp256k1.sign(hash, privateKey, { prehash: false, format: "recovered", extraEntropy: false });
+  const signature = secp256k1.sign(digest, privateKey, { prehash: false, format: "recovered", extraEntropy: false });
   // noble "recovered" format: recovery byte || r(32) || s(32)
   const recovery = signature[0]!;
   const out = Buffer.alloc(65);
@@ -28,11 +33,13 @@ export function signAddressMessage(message: string, privateKey: Uint8Array): str
 }
 
 /**
- * Wrap a compact address signature into the VerusID identity-signature
- * format (empirically: version 0x01 || signing height LE32 || sig count 0x01
- * || length 0x41 || compact65). Verifiers resolve the identity's primary
- * addresses AT the given height, so the height must be recent enough to
- * reflect the current keys — and never in the future.
+ * Wrap a compact signature into the VerusID identity-signature envelope:
+ * version 0x01 || signing height LE32 || sig count 0x01 || length 0x41 ||
+ * compact65 (`CIdentitySignature` VERSION_VERUSID serialization). The inner
+ * compact signature MUST sign the identity digest
+ * (`verusIdentitySignDigest`), NOT the plain address digest — verifiers
+ * recover the pubkey over the identity digest and resolve the identity's
+ * primary addresses AT the embedded height.
  */
 export function wrapIdentitySignature(compactSignatureBase64: string, blockHeight: number): string {
   const compact = Buffer.from(compactSignatureBase64, "base64");
@@ -47,7 +54,27 @@ export function wrapIdentitySignature(compactSignatureBase64: string, blockHeigh
   return out.toString("base64");
 }
 
-/** Sign as a VerusID: address-style compact signature wrapped with the signing height. */
-export function signIdentityMessage(message: string, privateKey: Uint8Array, blockHeight: number): string {
-  return wrapIdentitySignature(signAddressMessage(message, privateKey), blockHeight);
+export interface IdentitySignOptions {
+  /** Signing block height, embedded in the signature (recent chain tip). */
+  blockHeight: number;
+  /** Chain/system i-address, e.g. iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq (VRSCTEST). */
+  systemId: string;
+  /** The signing identity's i-address, e.g. iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma (v402test@). */
+  identityAddress: string;
+}
+
+/**
+ * Sign as a VerusID: compact-sign the identity digest (which binds chain,
+ * height and identity — see `verusIdentitySignDigest`) and wrap it in the
+ * identity-signature envelope. Verified against verusd verifymessage in the
+ * gated integration suite.
+ */
+export function signIdentityMessage(message: string, privateKey: Uint8Array, options: IdentitySignOptions): string {
+  const digest = verusIdentitySignDigest(
+    message,
+    decodeIAddress(options.systemId),
+    options.blockHeight,
+    decodeIAddress(options.identityAddress),
+  );
+  return wrapIdentitySignature(signCompactBase64(digest, privateKey), options.blockHeight);
 }

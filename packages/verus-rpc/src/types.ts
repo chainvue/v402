@@ -118,7 +118,12 @@ export interface IVerusRpc {
   /** Balances by currency for an address/identity (reconciliation on-chain crosscheck). */
   getCurrencyBalance(addressOrIdentity: string, minConf?: number): Promise<Record<string, number> | number>;
   signMessage(signer: string, message: string): Promise<SignMessageResult>;
-  verifyMessage(signer: string, signature: string, message: string): Promise<boolean>;
+  /**
+   * `checkLatest` (identities only): verify against the identity's LATEST
+   * on-chain state instead of its state at the height embedded in the
+   * signature — revocation and key rotation then take effect immediately.
+   */
+  verifyMessage(signer: string, signature: string, message: string, checkLatest?: boolean): Promise<boolean>;
   /** Returns the operation id (z_getoperationstatus tracks completion). */
   sendCurrency(fromAddress: string, outputs: SendCurrencyOutput[]): Promise<string>;
 }

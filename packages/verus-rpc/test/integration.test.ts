@@ -50,10 +50,10 @@ describe.skipIf(!RPC_URL)("verus-rpc integration (VRSCTEST)", () => {
     expect(tx.vout.length).toBeGreaterThan(0);
   });
 
-  it("getIdentity resolves the vector identity fum@", async () => {
-    const result = await client.getIdentity("fum@");
-    expect(result.identity.identityaddress).toBe("i4KtZ8jeMipNJfAdmfxkzQZKmaGpjvhYKe");
-    expect(result.identity.primaryaddresses.length).toBeGreaterThan(0);
+  it("getIdentity resolves the vector identity v402test@", async () => {
+    const result = await client.getIdentity("v402test@");
+    expect(result.identity.identityaddress).toBe("iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma");
+    expect(result.identity.primaryaddresses).toEqual(["RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT"]);
   });
 
   describe("cryptographic vector gate — signing.json", () => {
@@ -64,6 +64,15 @@ describe.skipIf(!RPC_URL)("verus-rpc integration (VRSCTEST)", () => {
         input["message"] as string,
       );
       expect(valid).toBe(true);
+      // checkLatest=true is what the v402 verifier sends — must also hold
+      // while the identity's keys are unchanged (daemon 4-param form)
+      const validLatest = await client.verifyMessage(
+        input["signer"] as string,
+        expected["signature"] as string,
+        input["message"] as string,
+        true,
+      );
+      expect(validLatest).toBe(true);
     });
   });
 

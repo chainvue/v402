@@ -77,11 +77,11 @@ export class MockVerusRpc implements IVerusRpc {
     );
   }
 
-  verifyMessage(signer: string, signature: string, message: string): Promise<boolean> {
+  verifyMessage(signer: string, signature: string, message: string, checkLatest?: boolean): Promise<boolean> {
     return this.dispatch(
       "verifyMessage",
-      [signer, signature, message],
-      this.impl.verifyMessage && (() => this.impl.verifyMessage!(signer, signature, message)),
+      checkLatest === undefined ? [signer, signature, message] : [signer, signature, message, checkLatest],
+      this.impl.verifyMessage && (() => this.impl.verifyMessage!(signer, signature, message, checkLatest)),
     );
   }
 

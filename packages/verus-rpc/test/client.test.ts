@@ -50,6 +50,12 @@ describe("VerusRpcClient — request shape", () => {
     await expect(client.verifyMessage("fum@", "c2ln", "msg")).resolves.toBe(true);
     expect(state.calls[0]!.body["params"]).toEqual(["fum@", "c2ln", "msg"]);
   });
+
+  it("forwards checkLatest as the daemon's 4th verifymessage param", async () => {
+    const { client, state } = makeClient(() => jsonResponse({ result: true }));
+    await client.verifyMessage("fum@", "c2ln", "msg", true);
+    expect(state.calls[0]!.body["params"]).toEqual(["fum@", "c2ln", "msg", true]);
+  });
 });
 
 describe("VerusRpcClient — error taxonomy", () => {

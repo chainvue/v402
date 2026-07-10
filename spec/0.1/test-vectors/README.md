@@ -54,12 +54,24 @@ Checked against `verusd` v1.2.17 on VRSCTEST (2026-07-10):
   digest, or authoritatively via `verifymessage`. The digest pipeline is:
   `msgHash = sha256(compactSize(len) || message)`;
   `signDigest = sha256(compactSize(19) || "Verus signed data:\n" || msgHash)`.
+- **Identity signatures sign a DIFFERENT digest** than address signatures
+  (confirmed against `CIdentitySignature::IdentitySignatureHash`, VerusCoin
+  `src/pbaas/crosschainrpc.cpp`, VERSION_VERUSID path): it additionally binds
+  the chain and the identity —
+  `idDigest = sha256(compactSize(19) || "Verus signed data:\n" || systemID(20) || height(LE32) || idID(20) || msgHash)`
+  where systemID/idID are the raw base58check payloads of the chain and
+  identity i-addresses. The wire form is the CIdentitySignature envelope:
+  `0x01 || height(LE32) || 0x01 || 0x41 || compact65`. Verification resolves
+  the identity's primary addresses AT the embedded height: heights before the
+  identity's registration are rejected; future heights are accepted (resolve
+  to the identity's latest state).
 - **VerusID signatures embed the signing block height** (bytes 1–4 of the
   decoded signature), so re-signing at a later height changes the bytes while
   remaining valid. Identity cases carry `"assert": "verify-only"`: validate
-  them via `verifymessage` (the recorded signature stays verifiable for
-  everyone; only the steward can regenerate, as the identity keys are not
-  published).
+  them via `verifymessage`. The vector identity `v402test@` has the published
+  test key A as its primary address, so any implementer can sign as
+  `v402test@` and reproduce these cases end-to-end (revocation/recovery stay
+  steward-controlled). Never fund the identity.
 
 ## Test case structure
 

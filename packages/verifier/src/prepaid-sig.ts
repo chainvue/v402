@@ -225,7 +225,12 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
 
     let signatureValid: boolean;
     try {
-      signatureValid = await this.rpc.verifyMessage(claim.payer, claim.signature, canonical);
+      // checkLatest=true (decision with D2): identity signatures embed a block
+      // height and verusd resolves the identity's keys AT that height by
+      // default — a compromised-then-rotated key could keep signing with an
+      // old height forever. Verifying against the LATEST identity state makes
+      // revocation and key rotation take effect immediately.
+      signatureValid = await this.rpc.verifyMessage(claim.payer, claim.signature, canonical, true);
     } catch (err) {
       if (err instanceof VerusRpcUnavailableError) {
         // client MAY retry with the SAME requestId (M5) — nothing reserved yet
