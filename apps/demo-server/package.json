@@ -1,0 +1,31 @@
+{
+  "name": "v402-demo-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Public integration example for v402: a NestJS API with three priced GET endpoints and one bodyHash-bound POST endpoint (GraphQL/MCP-style reference pattern). Not published.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node --enable-source-maps dist/main.js",
+    "start:dev": "tsx watch --env-file=../../.env src/main.ts"
+  },
+  "dependencies": {
+    "@chainvue/v402-nestjs": "workspace:*",
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@chainvue/v402-storage": "workspace:*",
+    "@chainvue/v402-verus-rpc": "workspace:*",
+    "@nestjs/testing": "^11.1.28",
+    "@types/supertest": "^7.2.0",
+    "supertest": "^7.2.2",
+    "tsx": "^4.19.0"
+  }
+}
