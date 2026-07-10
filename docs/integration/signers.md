@@ -36,11 +36,17 @@ import { facilitatorHeightProvider } from "@chainvue/v402-client-fetch";
 const addressSigner = new EnvSigner();                       // reads VERUS_SIGNING_KEY
 const devSigner = new FileSigner({ path: "~/.v402/keys/agent.key" }); // must be chmod 600
 
-// identity-mode: sign AS a VerusID (what v402 payers need).
-// Identity signatures embed a recent block height — the height provider
-// reads it from the facilitator's public health endpoint, no node needed.
+// identity-mode: sign AS a VerusID (what v402 payers need — an address-mode
+// signature can NEVER verify against an identity payer). Identity digests
+// bind the chain and the identity's i-address and embed a recent block
+// height; resolve the two i-addresses once via `getidentity <name>`
+// (identityaddress) and the chain id (getinfo → chainid), the height comes
+// from the facilitator's public health endpoint — no node needed at runtime.
 const signer = new EnvSigner({
-  identity: "v402.demoAgent@",
+  identity: {
+    identityAddress: "iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma", // getidentity v402test@ → identityaddress
+    systemId: "iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq",        // VRSCTEST chain id
+  },
   heightProvider: facilitatorHeightProvider("https://facilitator.example.com"),
 });
 ```
@@ -51,8 +57,10 @@ Rules baked in (fail closed):
 - EnvSigner throws when the variable is unset; never log its value — use a
   secret manager in production.
 - Identity mode without a heightProvider throws: `verifymessage <identity>`
-  does NOT accept bare address signatures, and the identity format embeds the
-  signing height (primary keys are resolved at that height).
+  does NOT accept bare address signatures, and the identity digest embeds the
+  signing height. Feed a recent height; v402 facilitators verify against the
+  identity's LATEST key state (checklatest), so signatures stop verifying
+  after a key rotation — re-sign with the rotated key.
 - Local signing is byte-compatible with the daemon's verification (validated
   against the reference test vectors and live `verifymessage`); the exact
   signature bytes differ from daemon-produced ones — that is expected and
