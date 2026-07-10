@@ -26,6 +26,9 @@ export class DiscoveryController {
       }));
     return {
       specUrl: this.config.payment.specUrl,
+      // clients need these to build the signed v402-balance-query payload
+      canonicalDomain: this.config.payment.canonicalDomain,
+      network: this.config.verus.chain,
       supportedVersions: this.config.payment.supportedVersions,
       defaultVersion: this.config.payment.defaultVersion,
       deprecatedVersions: [],

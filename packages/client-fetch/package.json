@@ -1,0 +1,40 @@
+{
+  "name": "@chainvue/v402-client-fetch",
+  "version": "0.1.0",
+  "description": "v402 client for AI agents and services: wrapFetchWithPayment (transparent 402 handshake) and V402Client (balance, topup, discovery). Parallel-safe ULIDs, normative M5 retry semantics, automatic price-mismatch recovery.",
+  "license": "Apache-2.0",
+  "author": "Robert Lech (chainvue)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@chainvue/v402-protocol": "workspace:*",
+    "@chainvue/v402-signer-verus": "workspace:*"
+  },
+  "devDependencies": {
+    "@chainvue/v402-nestjs": "workspace:*",
+    "@chainvue/v402-storage": "workspace:*",
+    "@chainvue/v402-verus-rpc": "workspace:*",
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "@nestjs/testing": "^11.1.28",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  }
+}
