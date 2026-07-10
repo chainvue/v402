@@ -7,7 +7,7 @@
  *                                        # polls until the on-chain deposit credits
  *
  * Required env: V402_ADMIN_TOKEN (simulated variant), VERUS_RPC_URL/USER/PASS
- * (NodeSigner — the payer identity's wallet), SMOKE_PAYER (default fum@).
+ * (NodeSigner — the payer identity's wallet), SMOKE_PAYER (default v402-agent@).
  * Signature verification always runs against the real Verus node via the
  * facilitator; only the deposit path differs between variants.
  */
@@ -17,7 +17,7 @@ import { NodeSigner } from "@chainvue/v402-signer-verus";
 
 const FACILITATOR = (process.env["FACILITATOR_URL"] ?? "http://localhost:3000").replace(/\/$/, "");
 const DEMO = (process.env["DEMO_URL"] ?? "http://localhost:3001").replace(/\/$/, "");
-const PAYER = process.env["SMOKE_PAYER"] ?? "fum@";
+const PAYER = process.env["SMOKE_PAYER"] ?? "v402-agent@";
 const ADMIN_TOKEN = process.env["V402_ADMIN_TOKEN"] ?? "";
 const DEPOSIT_MODE = process.env["SMOKE_DEPOSIT_MODE"] ?? "simulated";
 const DEPOSIT_AMOUNT = "1";
