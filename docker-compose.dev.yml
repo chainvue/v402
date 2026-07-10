@@ -1,0 +1,27 @@
+# Dev overlay (plan § Deployment): parks the Postgres/Redis services for
+# later phases (Postgres storage adapter, shared throttler state — Etappe 2+).
+# NOTHING consumes these yet; they exist so the compose topology is settled.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile future up
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    profiles: ["future"]
+    environment:
+      POSTGRES_DB: v402
+      POSTGRES_USER: v402
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - v402-postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:8-alpine
+    profiles: ["future"]
+    ports:
+      - "6379:6379"
+
+volumes:
+  v402-postgres:

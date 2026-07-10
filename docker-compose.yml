@@ -1,0 +1,60 @@
+# v402 MVP stack (plan § Deployment): facilitator + demo-server, SQLite on a
+# named volume. Single-command bootstrap:
+#
+#   real watcher (needs a reachable VRSCTEST node):
+#     FACILITATOR_AUTH_TOKEN=… VERUS_RPC_URL=… VERUS_RPC_USER=… VERUS_RPC_PASS=… \
+#       docker compose up --build
+#
+#   contributor quickstart, no Verus node at all (simulated deposits):
+#     NODE_ENV=development V402_WATCHER_MODE=simulated FACILITATOR_AUTH_TOKEN=dev-token \
+#       docker compose up --build
+#     (NODE_ENV=production + simulated refuses to boot by design)
+
+services:
+  facilitator:
+    build:
+      context: .
+      dockerfile: docker/facilitator.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      HOST: 0.0.0.0
+      DB_PATH: /data/v402.sqlite
+      VERUS_RPC_URL: ${VERUS_RPC_URL:-http://127.0.0.1:18843}
+      VERUS_RPC_USER: ${VERUS_RPC_USER:-}
+      VERUS_RPC_PASS: ${VERUS_RPC_PASS:-}
+      V402_CHAIN: ${V402_CHAIN:-vrsctest}
+      V402_PAY_TO: ${V402_PAY_TO:-explorerAPI@}
+      V402_CANONICAL_DOMAIN: ${V402_CANONICAL_DOMAIN:-localhost:3001}
+      V402_WATCHER_MODE: ${V402_WATCHER_MODE:-real}
+      V402_ALLOW_SIMULATED_IN_PROD: ${V402_ALLOW_SIMULATED_IN_PROD:-}
+      FACILITATOR_AUTH_TOKEN: ${FACILITATOR_AUTH_TOKEN:?set FACILITATOR_AUTH_TOKEN — the middleware token}
+      V402_ADMIN_TOKEN: ${V402_ADMIN_TOKEN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - v402-data:/data
+    restart: unless-stopped
+
+  demo-server:
+    build:
+      context: .
+      dockerfile: docker/demo-server.Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # internal URL the middleware calls vs public URL advertised to clients
+      FACILITATOR_URL: http://facilitator:3000
+      FACILITATOR_PUBLIC_URL: ${FACILITATOR_PUBLIC_URL:-http://localhost:3000}
+      FACILITATOR_AUTH_TOKEN: ${FACILITATOR_AUTH_TOKEN:?set FACILITATOR_AUTH_TOKEN — the middleware token}
+      V402_CHAIN: ${V402_CHAIN:-vrsctest}
+      V402_PAY_TO: ${V402_PAY_TO:-explorerAPI@}
+      V402_CANONICAL_DOMAIN: ${V402_CANONICAL_DOMAIN:-localhost:3001}
+    depends_on:
+      facilitator:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  v402-data:
