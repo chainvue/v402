@@ -1,0 +1,47 @@
+# CI — build, typecheck, test on every push and PR.
+#
+# Notes:
+# - pnpm comes from pnpm/action-setup, which reads the root `packageManager`
+#   field — the single source of truth for the pnpm version. corepack is not
+#   bundled with Node 25+ (see docs/RISKS.md, Layer 5), so we never rely on it.
+# - Build runs BEFORE typecheck/test: workspace packages resolve each other
+#   through their published entry points (`dist/`), so a fresh checkout has
+#   nothing to typecheck or test against until `pnpm build` has run.
+# - Integration suites gated behind VERUS_RPC_URL skip automatically — CI has
+#   no Verus node. Vector parity runs as part of the normal suite.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
