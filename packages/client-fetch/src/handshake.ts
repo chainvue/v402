@@ -163,7 +163,9 @@ async function sendPaid(
   const signature = await config.signer.signMessage(canonical);
 
   const headers = new Headers(init?.headers);
-  headers.set(V402_HEADERS.scheme, requirement.scheme);
+  // D1: X-V402-Scheme carries `<scheme>/<schemeVersion>` — byte-identical to
+  // the signed payload line 1, so the server can decide unsupported-scheme-version (M2)
+  headers.set(V402_HEADERS.scheme, `${requirement.scheme}/${requirement.schemeVersion}`);
   headers.set(V402_HEADERS.payer, config.payer);
   headers.set(V402_HEADERS.amount, requirement.amount);
   headers.set(V402_HEADERS.requestId, requestId);

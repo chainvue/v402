@@ -287,6 +287,32 @@
       "input": {
         "type": "paymentHeaders",
         "value": {
+          "x-v402-scheme": "verus-prepaid-sig/0.1",
+          "x-v402-payer": "v402test.demoAgent@",
+          "x-v402-amount": "0.001",
+          "x-v402-request-id": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "x-v402-issued-at": "1783650000",
+          "x-v402-signature": "AgQ2Zml0eXNpZ25hdHVyZQ=="
+        }
+      },
+      "expected": {
+        "valid": true,
+        "claim": {
+          "scheme": "verus-prepaid-sig/0.1",
+          "payer": "v402test.demoAgent@",
+          "amount": "0.001",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000,
+          "signature": "AgQ2Zml0eXNpZ25hdHVyZQ=="
+        }
+      }
+    },
+    {
+      "name": "headers-bare-scheme-compat",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "type": "paymentHeaders",
+        "value": {
           "x-v402-scheme": "verus-prepaid-sig",
           "x-v402-payer": "v402test.demoAgent@",
           "x-v402-amount": "0.001",
@@ -313,7 +339,7 @@
       "input": {
         "type": "paymentHeaders",
         "value": {
-          "x-v402-scheme": "verus-prepaid-sig",
+          "x-v402-scheme": "verus-prepaid-sig/0.1",
           "x-v402-payer": "v402test.demoAgent@",
           "x-v402-amount": "0.001",
           "x-v402-request-id": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
@@ -330,7 +356,7 @@
       "input": {
         "type": "paymentHeaders",
         "value": {
-          "x-v402-scheme": "verus-prepaid-sig",
+          "x-v402-scheme": "verus-prepaid-sig/0.1",
           "x-v402-payer": "v402test.demoAgent@",
           "x-v402-amount": "0.001",
           "x-v402-request-id": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
@@ -348,7 +374,7 @@
       "input": {
         "type": "paymentHeaders",
         "value": {
-          "x-v402-scheme": "verus-prepaid-sig",
+          "x-v402-scheme": "verus-prepaid-sig/0.1",
           "x-v402-payer": "v402test.demoAgent@",
           "x-v402-amount": "0.001",
           "x-v402-request-id": "not-a-ulid",

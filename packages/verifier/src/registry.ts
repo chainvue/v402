@@ -26,12 +26,11 @@ export class VerifierRegistry {
 }
 
 /**
- * `X-V402-Scheme` carries the scheme name, optionally with an explicit
- * scheme version (`verus-prepaid-sig` or `verus-prepaid-sig/0.1`).
- * NOTE: the version suffix is an implementation extension pending spec
- * clarification — M2 mandates a distinct `unsupported-scheme-version`
- * error, but the 0.1 wire format transmits no scheme version outside the
- * signed payload (which the server rebuilds rather than receives).
+ * `X-V402-Scheme` carries `<scheme>/<schemeVersion>` (normative, decision
+ * D1) — byte-identical to payload line 1, so the server can decide the
+ * distinct `unsupported-scheme-version` error (M2). Conforming clients MUST
+ * send the versioned form; servers MUST accept a bare scheme name as that
+ * scheme's default version (compatibility).
  */
 export function parseSchemeHeader(value: string): { scheme: string; version?: string } {
   const slash = value.indexOf("/");

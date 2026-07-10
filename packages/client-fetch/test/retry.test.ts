@@ -26,6 +26,7 @@ interface Seen {
   requestId: string | undefined;
   signature: string | undefined;
   amount: string | undefined;
+  scheme: string | undefined;
 }
 
 type Script = (paidAttempt: number, seen: Seen, res: ServerResponse) => void;
@@ -39,6 +40,7 @@ function scriptedServer(challengeAmount: string, script: Script): Promise<{ serv
       requestId: req.headers["x-v402-request-id"] as string | undefined,
       signature: req.headers["x-v402-signature"] as string | undefined,
       amount: req.headers["x-v402-amount"] as string | undefined,
+      scheme: req.headers["x-v402-scheme"] as string | undefined,
     };
     if (seen.requestId === undefined) {
       res.writeHead(402, { "content-type": "application/json" });
@@ -97,6 +99,17 @@ describe("M5 retry semantics against a scripted origin", () => {
     expect(seenLog[0]!.amount).toBe("0.002");
     expect(seenLog[1]!.amount).toBe("0.001");
     expect(seenLog[0]!.requestId).not.toBe(seenLog[1]!.requestId); // fresh ULID
+  });
+
+  it("sends X-V402-Scheme as <scheme>/<schemeVersion> — the signed payload line 1 (D1)", async () => {
+    const { server, url, seenLog } = await scriptedServer("0.001", (_attempt, _seen, res) => {
+      json(res, 200, { ok: true });
+    });
+    servers.push(server);
+
+    const response = await client()(`${url}/api/x`);
+    expect(response.status).toBe(200);
+    expect(seenLog[0]!.scheme).toBe("verus-prepaid-sig/0.1");
   });
 
   it("retries 503 with the SAME requestId and the SAME signature", async () => {

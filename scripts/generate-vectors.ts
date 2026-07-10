@@ -303,8 +303,9 @@ const acceptsEntry = {
   topup: { depositAddress: "explorerAPI@", attribution: "sender-verusid" },
 };
 
+// D1: the normative header form is `<scheme>/<schemeVersion>` (mirrors payload line 1)
 const validHeaders = {
-  "x-v402-scheme": "verus-prepaid-sig",
+  "x-v402-scheme": "verus-prepaid-sig/0.1",
   "x-v402-payer": "v402test.demoAgent@",
   "x-v402-amount": "0.001",
   "x-v402-request-id": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
@@ -387,6 +388,23 @@ const wireFormatCases: TestCase[] = [
     name: "headers-valid",
     spec: SPEC,
     input: { type: "paymentHeaders", value: validHeaders },
+    expected: {
+      valid: true,
+      claim: {
+        scheme: "verus-prepaid-sig/0.1",
+        payer: "v402test.demoAgent@",
+        amount: "0.001",
+        requestId: "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+        issuedAt: 1783650000,
+        signature: "AgQ2Zml0eXNpZ25hdHVyZQ==",
+      },
+    },
+  },
+  {
+    // D1 compat: a bare scheme name stays parseable — servers treat it as the default version
+    name: "headers-bare-scheme-compat",
+    spec: SPEC,
+    input: { type: "paymentHeaders", value: { ...validHeaders, "x-v402-scheme": "verus-prepaid-sig" } },
     expected: {
       valid: true,
       claim: {
