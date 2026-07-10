@@ -1,0 +1,28 @@
+{
+  "name": "@chainvue/v402-protocol",
+  "version": "0.1.0",
+  "description": "v402 protocol core: types, wire-format schemas, canonical payload serialization, amount utilities. Framework-agnostic, browser-safe.",
+  "license": "Apache-2.0",
+  "author": "Robert Lech (chainvue)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

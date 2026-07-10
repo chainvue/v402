@@ -27,7 +27,7 @@ byte-equality.
 ```json
 {
   "name": "human-readable-id",
-  "spec": "v402-prepaid-sig-v0.1",
+  "spec": "verus-prepaid-sig-v0.1",
   "input": { },
   "expected": { }
 }
