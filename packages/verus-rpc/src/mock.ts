@@ -3,6 +3,7 @@ import type {
   SendCurrencyOutput,
   SignMessageResult,
   VerusBlock,
+  VerusBlockVerbose,
   VerusIdentityResult,
   VerusInfo,
   VerusRawTransaction,
@@ -34,6 +35,14 @@ export class MockVerusRpc implements IVerusRpc {
 
   getBlock(hashOrHeight: string | number): Promise<VerusBlock> {
     return this.dispatch("getBlock", [hashOrHeight], this.impl.getBlock && (() => this.impl.getBlock!(hashOrHeight)));
+  }
+
+  getBlockVerbose(hashOrHeight: string | number): Promise<VerusBlockVerbose> {
+    return this.dispatch(
+      "getBlockVerbose",
+      [hashOrHeight],
+      this.impl.getBlockVerbose && (() => this.impl.getBlockVerbose!(hashOrHeight)),
+    );
   }
 
   getRawTransaction(txid: string): Promise<VerusRawTransaction> {

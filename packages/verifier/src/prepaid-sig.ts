@@ -7,6 +7,7 @@ import {
   canonicalize,
   humanToSats,
   isBase64Signature,
+  normalizeIdentityKey,
   parseExtensionBlock,
   parsePaymentHeaders,
   type ExtensionField,
@@ -131,8 +132,11 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
       });
     }
 
-    // 6. Blocklist — before the signature RPC (local lookup, saves node capacity)
-    if (await this.storage.isBlocked(claim.payer)) {
+    // 6. Blocklist — before the signature RPC (local lookup, saves node capacity).
+    // Balance state is keyed by the normalized identity (chain resolves names
+    // case-insensitively); the canonical payload keeps the payer as signed.
+    const identityKey = normalizeIdentityKey(claim.payer);
+    if (await this.storage.isBlocked(identityKey)) {
       return fail(403, "blocked", "identity is blocked");
     }
 
@@ -179,7 +183,7 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
     // 8. Atomic phase-1 debit
     const reserved = await this.storage.reservePayment({
       requestId: claim.requestId,
-      identityId: claim.payer,
+      identityId: identityKey,
       issuedAt: claim.issuedAt,
       receivedAt: nowSec,
       amountSats: humanToSats(policy.priceHuman),
@@ -191,7 +195,7 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
         return {
           ok: true,
           requestId: claim.requestId,
-          payer: claim.payer,
+          payer: identityKey,
           amountSats: humanToSats(policy.priceHuman),
           balanceAfterSats: reserved.balanceAfterSats,
         };

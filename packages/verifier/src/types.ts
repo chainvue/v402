@@ -65,6 +65,7 @@ export type VerifyAndReserveResult =
   | {
       ok: true;
       requestId: string;
+      /** Normalized identity key (balance account) — not necessarily the payer string as signed. */
       payer: string;
       amountSats: bigint;
       balanceAfterSats: bigint;

@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
-import { and, asc, desc, eq, gt, isNull, lt, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, isNull, lt, ne } from "drizzle-orm";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
@@ -447,6 +447,15 @@ export class SqliteStorage implements IStorage {
       .select()
       .from(deposits)
       .where(and(isNull(deposits.creditedAt), isNull(deposits.reorgedAt)))
+      .all()
+      .map((row) => this.mapDeposit(row));
+  }
+
+  async listDepositsAtOrAbove(blockHeight: number): Promise<DepositRecord[]> {
+    return this.use()
+      .select()
+      .from(deposits)
+      .where(and(gte(deposits.blockHeight, blockHeight), isNull(deposits.reorgedAt)))
       .all()
       .map((row) => this.mapDeposit(row));
   }

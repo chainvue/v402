@@ -29,6 +29,16 @@ export interface VerusBlock {
   [key: string]: unknown;
 }
 
+/** getblock verbosity 2 — full transaction objects inline. */
+export interface VerusBlockVerbose {
+  hash: string;
+  height: number;
+  time: number;
+  previousblockhash?: string;
+  tx: VerusRawTransaction[];
+  [key: string]: unknown;
+}
+
 export interface VerusScriptPubKey {
   addresses?: string[];
   [key: string]: unknown;
@@ -101,6 +111,8 @@ export interface IVerusRpc {
   getInfo(): Promise<VerusInfo>;
   getBlockCount(): Promise<number>;
   getBlock(hashOrHeight: string | number): Promise<VerusBlock>;
+  /** Verbosity 2 — full tx objects; the deposit watcher scans blocks this way. */
+  getBlockVerbose(hashOrHeight: string | number): Promise<VerusBlockVerbose>;
   getRawTransaction(txid: string): Promise<VerusRawTransaction>;
   getIdentity(nameOrAddress: string): Promise<VerusIdentityResult>;
   signMessage(signer: string, message: string): Promise<SignMessageResult>;

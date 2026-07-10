@@ -7,6 +7,7 @@ export type {
   VerusRpcCircuitConfig,
   VerusInfo,
   VerusBlock,
+  VerusBlockVerbose,
   VerusVin,
   VerusVout,
   VerusScriptPubKey,

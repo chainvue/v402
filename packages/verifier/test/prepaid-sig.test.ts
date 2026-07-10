@@ -6,6 +6,8 @@ import { MockVerusRpc, VerusRpcError, VerusRpcUnavailableError } from "@chainvue
 import { VerusPrepaidSigVerifier, type IncomingPaymentRequest, type RoutePolicy } from "../src/index.js";
 
 const PAYER = "v402test.demoAgent@";
+/** Balance state is keyed by the normalized identity (chain names are case-insensitive). */
+const PAYER_KEY = "v402test.demoagent@";
 const REQUEST_ID = "01H8XG7Q4M2N8P5R7T3V9WXYZA";
 const ISSUED_AT = 1_783_650_000;
 const NOW = ISSUED_AT + 5;
@@ -29,7 +31,7 @@ async function setup(options: {
   await storage.initialize();
   if (options.balanceSats !== undefined && options.balanceSats > 0n) {
     const deposit = await storage.insertDeposit({
-      identityId: PAYER,
+      identityId: PAYER_KEY,
       amountSats: options.balanceSats,
       currency: "VRSCTEST",
       txid: "fund",
@@ -43,7 +45,7 @@ async function setup(options: {
     await storage.creditDeposit(deposit.id, ISSUED_AT - 100);
   }
   if (options.blocked === true) {
-    await storage.blockIdentity({ identityId: PAYER, reason: "test", blockedAt: ISSUED_AT - 10 });
+    await storage.blockIdentity({ identityId: PAYER_KEY, reason: "test", blockedAt: ISSUED_AT - 10 });
   }
   const capturedCanonicals: string[] = [];
   const rpc = new MockVerusRpc({
@@ -128,7 +130,7 @@ describe("verifyAndReserve — happy paths", () => {
     expect(result).toEqual({
       ok: true,
       requestId: REQUEST_ID,
-      payer: PAYER,
+      payer: PAYER_KEY, // normalized balance-account key, not the as-signed casing
       amountSats: 100_000n,
       balanceAfterSats: 0n,
     });
@@ -379,7 +381,7 @@ describe("commit / rollback (B3, idempotent)", () => {
     await verifier.verifyAndReserve(requestFor(), POLICY);
     expect(await verifier.rollback(REQUEST_ID)).toEqual({ ok: true, alreadyRolledBack: false });
     expect(await verifier.rollback(REQUEST_ID)).toEqual({ ok: true, alreadyRolledBack: true });
-    expect((await storage.getIdentity(PAYER))?.balanceSats).toBe(100_000n);
+    expect((await storage.getIdentity(PAYER_KEY))?.balanceSats).toBe(100_000n);
     const replay = await verifier.verifyAndReserve(requestFor(), POLICY);
     expect(!replay.ok && replay.error).toMatchObject({ code: "replay", details: { previousStatus: "error" } });
   });

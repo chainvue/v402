@@ -16,6 +16,7 @@ import type {
   SendCurrencyOutput,
   SignMessageResult,
   VerusBlock,
+  VerusBlockVerbose,
   VerusIdentityResult,
   VerusInfo,
   VerusRawTransaction,
@@ -91,6 +92,10 @@ export class VerusRpcClient implements IVerusRpc {
   /** Verbosity 1: header + txids. verusd expects heights as strings. */
   getBlock(hashOrHeight: string | number): Promise<VerusBlock> {
     return this.call("getblock", [String(hashOrHeight), 1]);
+  }
+
+  getBlockVerbose(hashOrHeight: string | number): Promise<VerusBlockVerbose> {
+    return this.call("getblock", [String(hashOrHeight), 2]);
   }
 
   /** Verbose form — includes vin/vout needed for deposit attribution. */

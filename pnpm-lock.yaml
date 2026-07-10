@@ -21,6 +21,18 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.1)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(tsx@4.23.0))
 
+  packages/deposit-watcher:
+    dependencies:
+      '@chainvue/v402-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@chainvue/v402-storage':
+        specifier: workspace:*
+        version: link:../storage
+      '@chainvue/v402-verus-rpc':
+        specifier: workspace:*
+        version: link:../verus-rpc
+
   packages/protocol:
     dependencies:
       zod:

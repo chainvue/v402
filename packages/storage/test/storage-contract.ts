@@ -267,6 +267,16 @@ export function describeStorageContract(name: string, factory: () => Promise<ISt
         await expectLedgerInvariants("agent@");
       });
 
+      it("lists non-reorged deposits at or above a height (reorg check)", async () => {
+        const low = await storage.insertDeposit({ ...depositInput, txid: "low", blockHeight: 150 });
+        const high = await storage.insertDeposit({ ...depositInput, txid: "high", blockHeight: 205 });
+        const reorged = await storage.insertDeposit({ ...depositInput, txid: "gone", blockHeight: 210 });
+        await storage.markDepositReorged(reorged.id, T0);
+        const found = await storage.listDepositsAtOrAbove(200);
+        expect(found.map((d) => d.id).sort()).toEqual([high.id]);
+        expect((await storage.listDepositsAtOrAbove(100)).map((d) => d.id).sort()).toEqual([low.id, high.id]);
+      });
+
       it("sums credited deposits, optionally excluding simulated ones", async () => {
         const real = await storage.insertDeposit(depositInput);
         const simulated = await storage.insertDeposit({

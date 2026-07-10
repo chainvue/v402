@@ -82,6 +82,8 @@ export interface IStorage {
   updateDepositConfirmations(id: number, confirmations: number): Promise<void>;
   /** Deposits awaiting confirmation depth (`credited_at` null, not reorged). */
   listUncreditedDeposits(): Promise<DepositRecord[]>;
+  /** Non-reorged deposits with `blockHeight >= height` — the watcher's reorg check scans these. */
+  listDepositsAtOrAbove(blockHeight: number): Promise<DepositRecord[]>;
   /**
    * Credit a confirmed deposit: set `credited_at`, auto-provision the identity
    * on first deposit, balance += amount, ledger `deposit/deposit_credited`.

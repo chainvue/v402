@@ -249,6 +249,12 @@ export class InMemoryStorage implements IStorage {
       .map((d) => ({ ...d }));
   }
 
+  async listDepositsAtOrAbove(blockHeight: number): Promise<DepositRecord[]> {
+    return [...this.depositsByKey.values()]
+      .filter((d) => d.blockHeight >= blockHeight && d.reorgedAt === undefined)
+      .map((d) => ({ ...d }));
+  }
+
   async creditDeposit(id: number, creditedAt: number): Promise<CreditDepositResult> {
     const deposit = this.depositById(id);
     if (!deposit) return { ok: false, reason: "not-found" };
