@@ -1,7 +1,7 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /**
- * Drizzle schema mirroring PLAN.md § Data Model. Amounts are TEXT
+ * Drizzle schema of the v402 storage data model. Amounts are TEXT
  * satoshi-strings (Q3) — bigint conversion happens in the repository layer.
  *
  * Deliberate deviation from the plan's DDL sketch: no FK from

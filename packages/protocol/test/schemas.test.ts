@@ -6,7 +6,7 @@ import {
   paymentRequirementSchema,
 } from "../src/index.js";
 
-/** The normative 402 example from PLAN.md § 402 response. */
+/** The normative 402 example from spec/0.1/protocol.md § 3. */
 const accepts402 = {
   scheme: "verus-prepaid-sig",
   schemeVersion: "0.1",

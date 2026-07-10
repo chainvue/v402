@@ -35,7 +35,7 @@ function errorCode(fn: () => unknown): string {
 }
 
 describe("canonicalize — byte-exact reference strings (spec § Signed payload)", () => {
-  it("produces the normative GET example from PLAN.md", () => {
+  it("produces the normative GET example from spec/0.1/canonical-payload.md", () => {
     expect(canonicalize(basePayload)).toBe(
       "verus-prepaid-sig/0.1\n" +
         "canonicalDomain: explorer.example.com\n" +
@@ -52,7 +52,7 @@ describe("canonicalize — byte-exact reference strings (spec § Signed payload)
     );
   });
 
-  it("produces the normative extension example from PLAN.md", () => {
+  it("produces the normative extension example from spec/0.1/canonical-payload.md", () => {
     const result = canonicalize({
       ...basePayload,
       canonicalDomain: "example.com",
@@ -144,7 +144,7 @@ describe("canonicalize — fail-closed validation", () => {
 });
 
 describe("canonicalizeBalanceQuery", () => {
-  it("produces the normative balance-query example from PLAN.md", () => {
+  it("produces the normative balance-query example from spec/0.1/canonical-payload.md", () => {
     expect(
       canonicalizeBalanceQuery({
         canonicalDomain: "facilitator.example.com",

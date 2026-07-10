@@ -54,8 +54,9 @@ docker run -p 3000:3000 \
 
 Schema migrations run at boot (no entrypoint script needed). Health:
 `GET /v1/health` → 200 ok / 503 degraded (wired as the container healthcheck).
-Metrics: `GET /metrics` (Prometheus; the full v402 metric set is documented in
-PLAN.md § Observability).
+Metrics: `GET /metrics` (Prometheus; the metric names are part of the public
+observability contract — see the error catalog and conventions in
+[`spec/0.1/facilitator-api.md`](../../spec/0.1/facilitator-api.md)).
 
 ## Backups
 

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { PROTOCOL_VERSION, SCHEME_VERUS_PREPAID_SIG } from "@chainvue/v402-protocol";
 
 /**
- * Facilitator configuration (PLAN.md § Configuration), Zod-validated at boot.
+ * Facilitator configuration, Zod-validated at boot (env reference: docs/integration/facilitator-docker.md).
  * Defaults live here; environment variables override the deployment-specific
  * values (see buildConfig). Secrets only ever arrive via env.
  */
