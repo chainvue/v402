@@ -1,0 +1,11 @@
+v402 — Verus-Native Payment Layer for AI-Agent APIs
+Copyright 2026 Robert Lech (chainvue)
+
+This repository contains two distinctly licensed bodies of work:
+
+  * Code (packages/, apps/, examples/, docker/, and repository tooling)
+    is licensed under the Apache License, Version 2.0 — see LICENSE-CODE.
+
+  * The protocol specification (spec/) is licensed under the
+    Creative Commons Attribution 4.0 International License (CC-BY-4.0)
+    — see LICENSE-SPEC.

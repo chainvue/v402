@@ -1,0 +1,15 @@
+# Never bake secrets or local state into images
+.env
+.env.*
+data/
+
+# Not needed in build context
+.git/
+node_modules/
+dist/
+coverage/
+docs/
+spec/
+examples/
+*.md
+.DS_Store
