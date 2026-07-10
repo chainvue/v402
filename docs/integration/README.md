@@ -1,8 +1,15 @@
 # Integration Guides
 
-Framework-specific how-tos land here in Etappe 1, Layer 7 (delivery plan step 23):
+- [Integrating v402 in a NestJS API](./nestjs.md) — one module import + one
+  decorator per priced route; in-process vs http mode; two-phase semantics;
+  operational requirements
+- [Running the facilitator standalone (Docker)](./facilitator-docker.md) —
+  compose quickstarts, environment reference, backups, secrets
+- [Signer options: Node vs Env vs File](./signers.md) — decision table,
+  identity-mode signing without a node, client retry behavior
+- [Discovery + topup UX for new customers](./discovery-topup.md) — zero to
+  paid requests: discover, top up, wait for credit, pay
 
-- Integrating v402 in a NestJS API (`@chainvue/v402-nestjs`)
-- Running the facilitator standalone (Docker)
-- Signer options: Node vs Env vs File
-- Discovery + topup UX for new customers
+Protocol-level reference: [`spec/`](../../spec/) (normative), including the
+[facilitator HTTP API](../../spec/0.1/facilitator-api.md) for non-JS
+implementations.
