@@ -45,8 +45,15 @@ Checked against `verusd` v1.2.17 on VRSCTEST (2026-07-10):
 - **Address-key `signmessage` is deterministic** — repeat signing of the same
   message (incl. multiline canonical payloads) yields byte-identical
   signatures. Signing vectors with `"assert": "signature-equal"` therefore
-  freeze byte-equality. The generator re-checks this on every run and aborts
-  if determinism ever breaks.
+  freeze byte-equality — **for daemon regeneration**. Third-party signer
+  implementations should NOT assert byte-equality against these signatures:
+  verusd derives its RFC 6979 nonce with a non-standard variant, so an
+  independent correct signer produces different (equally valid) bytes.
+  Assert instead that (a) your message hash matches `expected.hash`, and
+  (b) your signature verifies — offline via pubkey recovery over the sign
+  digest, or authoritatively via `verifymessage`. The digest pipeline is:
+  `msgHash = sha256(compactSize(len) || message)`;
+  `signDigest = sha256(compactSize(19) || "Verus signed data:\n" || msgHash)`.
 - **VerusID signatures embed the signing block height** (bytes 1–4 of the
   decoded signature), so re-signing at a later height changes the bytes while
   remaining valid. Identity cases carry `"assert": "verify-only"`: validate
