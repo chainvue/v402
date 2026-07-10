@@ -1,5 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import { tokenEquals } from "../auth/token-equals.js";
 import { V402_CONFIG } from "../config/config.module.js";
 import type { FacilitatorConfig } from "../config/schema.js";
 
@@ -22,9 +22,7 @@ export class AdminTokenGuard implements CanActivate {
     if (header === undefined || !header.startsWith("Bearer ")) {
       throw new UnauthorizedException("missing Bearer authorization");
     }
-    const provided = Buffer.from(header.slice("Bearer ".length), "utf8");
-    const expectedBuf = Buffer.from(expected, "utf8");
-    if (provided.length !== expectedBuf.length || !timingSafeEqual(provided, expectedBuf)) {
+    if (!tokenEquals(header.slice("Bearer ".length), expected)) {
       throw new UnauthorizedException("invalid admin token");
     }
     return true;

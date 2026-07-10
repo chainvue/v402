@@ -1,6 +1,6 @@
-import { timingSafeEqual } from "node:crypto";
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { V402_CONFIG } from "../config/config.module.js";
+import { basicPassword, tokenEquals } from "./token-equals.js";
 import type { FacilitatorConfig } from "../config/schema.js";
 
 /**
@@ -23,15 +23,11 @@ export class BasicAuthGuard implements CanActivate {
     }
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string | undefined> }>();
     const header = request.headers["authorization"];
-    if (header === undefined || !header.startsWith("Basic ")) {
+    const password = header === undefined ? undefined : basicPassword(header);
+    if (password === undefined) {
       throw new UnauthorizedException("missing Basic authorization");
     }
-    const decoded = Buffer.from(header.slice("Basic ".length), "base64").toString("utf8");
-    const separator = decoded.indexOf(":");
-    const password = separator === -1 ? "" : decoded.slice(separator + 1);
-    const passwordBuf = Buffer.from(password, "utf8");
-    const expectedBuf = Buffer.from(expected, "utf8");
-    if (passwordBuf.length !== expectedBuf.length || !timingSafeEqual(passwordBuf, expectedBuf)) {
+    if (!tokenEquals(password, expected)) {
       throw new UnauthorizedException("invalid token");
     }
     return true;
