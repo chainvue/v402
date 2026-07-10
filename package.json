@@ -2,6 +2,7 @@
   "name": "v402-monorepo",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "v402 — Verus-native payment layer for AI-agent APIs. Monorepo root: spec (CC-BY-4.0) + reference implementation (Apache-2.0).",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
@@ -15,9 +16,11 @@
     "typecheck": "pnpm -r --if-present run typecheck",
     "lint": "pnpm -r --if-present run lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "generate:vectors": "pnpm --filter @chainvue/v402-protocol build && node scripts/generate-vectors.ts"
   },
   "devDependencies": {
+    "@chainvue/v402-protocol": "workspace:*",
     "@types/node": "^26.1.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"

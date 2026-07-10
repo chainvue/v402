@@ -1,26 +1,58 @@
 # Reference Test Vectors — v402/0.1
 
-**Status:** placeholder — vectors are generated in Etappe 1, Layer 1 (delivery
-plan step 5) by a deterministic script (`scripts/generate-vectors.ts`) using
-fixed test keys. Do not hand-edit vector files; regenerate on any spec change.
-
 Normative conformance fixtures: an implementation in any language runs these
-and either passes or doesn't. Also published as `@chainvue/v402-test-vectors`.
+and either passes or doesn't. Generated deterministically by
+`scripts/generate-vectors.ts` (repo root) — **do not hand-edit vector files**;
+regenerate on any spec change via `pnpm generate:vectors`.
 
-## Planned categories
+## Categories
 
-| File | Covers |
-|---|---|
-| `canonical.json` | inputs → expected canonical payload byte-string |
-| `signing.json` | inputs + deterministic key → expected signature (RFC 6979)* |
-| `verification.json` | signed payloads → expected accept/reject + reason |
-| `wire-format.json` | 402 responses, discovery document, facilitator API shapes |
-| `extensions.json` | extension canonicalization, sort order, accept/reject semantics |
-| `boundary.json` | min/max amounts, unicode identities, boundary `issuedAt`, malformed inputs |
+| File | Covers | Regeneration |
+|---|---|---|
+| `canonical.json` | payload → expected canonical byte-string (payment + balance-query) | pure |
+| `extensions.json` | extension-block serialize/parse, sort order, accept/reject semantics | pure |
+| `boundary.json` | fail-closed canonicalization errors, amount conversion edge cases | pure |
+| `wire-format.json` | 402 response, discovery document, `X-V402-*` header parsing | pure |
+| `signing.json` | canonical string + key → expected signature | needs VRSCTEST node |
+| `verification.json` | (signer, signature, message) → accept/reject | needs VRSCTEST node |
 
-\* Pre-freeze check required: confirm `verusd signmessage` signs
-deterministically; if not, signing vectors assert verify-validity instead of
-byte-equality.
+"Pure" categories regenerate without any node. Signing/verification
+regeneration needs `VERUS_RPC_URL`, `VERUS_RPC_USER`, `VERUS_RPC_PASS` in the
+environment (see `.env.example`); without them the generator keeps the
+committed files.
+
+## Test keys — `keys.json`
+
+The signing keys are **deliberately public**. They derive from documented seed
+strings, so any implementer can reproduce them without trusting this repo:
+
+```
+privkey = sha256(utf8(seed))
+WIF     = base58check(0xBC || privkey || 0x01)   # Verus/Komodo prefix, compressed
+```
+
+| Key | Seed | Address |
+|---|---|---|
+| A | `v402-test-vectors/0.1 key A` | `RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT` |
+| B | `v402-test-vectors/0.1 key B` | `RLjrXPziU4Moc13vc2vGMvNpMmfM7ozZir` |
+
+**Never fund these addresses** — anything sent there is publicly spendable.
+
+## Determinism (pre-freeze check, resolved)
+
+Checked against `verusd` v1.2.17 on VRSCTEST (2026-07-10):
+
+- **Address-key `signmessage` is deterministic** — repeat signing of the same
+  message (incl. multiline canonical payloads) yields byte-identical
+  signatures. Signing vectors with `"assert": "signature-equal"` therefore
+  freeze byte-equality. The generator re-checks this on every run and aborts
+  if determinism ever breaks.
+- **VerusID signatures embed the signing block height** (bytes 1–4 of the
+  decoded signature), so re-signing at a later height changes the bytes while
+  remaining valid. Identity cases carry `"assert": "verify-only"`: validate
+  them via `verifymessage` (the recorded signature stays verifiable for
+  everyone; only the steward can regenerate, as the identity keys are not
+  published).
 
 ## Test case structure
 
@@ -33,4 +65,9 @@ byte-equality.
 }
 ```
 
-Coverage target for v0.1: ~30–50 cases across categories.
+## CI gate
+
+`packages/protocol/test/vectors.test.ts` runs every vector against the
+reference implementation on each test run. Cryptographic checks of
+signing/verification vectors run in the RPC-gated integration suite (Layer 2+,
+gated behind `VERUS_RPC_URL`).

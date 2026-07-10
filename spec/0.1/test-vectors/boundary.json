@@ -1,0 +1,515 @@
+{
+  "category": "boundary",
+  "generator": "scripts/generate-vectors.ts",
+  "cases": [
+    {
+      "name": "canonicalize-rejects-method-lowercase",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "get",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-path-without-leading-slash",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-path-with-dot-segment",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/../secret",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-path-with-duplicate-slashes",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api//tx",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-path-with-space",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/a b",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-amount-leading-zeros",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "00.1",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-amount-scientific-notation",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "1e5",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-amount-negative",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "-1",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-amount-nine-decimals",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.000000001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-payer-without-at",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-request-id-too-short",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZ",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-request-id-excluded-char",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZI",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-request-id-lowercase",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01h8xg7q4m2n8p5r7t3v9wxyza",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-request-id-first-char-overflow",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "81H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-issued-at-negative",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": -1
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-issued-at-fractional",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1.5
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-network-uppercase",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "VRSCTEST",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "canonicalize-rejects-scheme-uppercase",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "canonicalize",
+        "payload": {
+          "scheme": "Verus-Prepaid-Sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "error": "invalid-field"
+      }
+    },
+    {
+      "name": "human-to-sats-min-amount",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "humanToSats",
+        "human": "0.00000001"
+      },
+      "expected": {
+        "sats": "1"
+      }
+    },
+    {
+      "name": "human-to-sats-one-coin",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "humanToSats",
+        "human": "1"
+      },
+      "expected": {
+        "sats": "100000000"
+      }
+    },
+    {
+      "name": "human-to-sats-trailing-zeros",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "humanToSats",
+        "human": "1.99999000"
+      },
+      "expected": {
+        "sats": "199999000"
+      }
+    },
+    {
+      "name": "human-to-sats-max-uint64",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "humanToSats",
+        "human": "184467440737.09551616"
+      },
+      "expected": {
+        "sats": "18446744073709551616"
+      }
+    },
+    {
+      "name": "sats-to-human-zero",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "satsToHuman",
+        "sats": "0"
+      },
+      "expected": {
+        "human": "0"
+      }
+    },
+    {
+      "name": "sats-to-human-sub-sat-precision",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "satsToHuman",
+        "sats": "123"
+      },
+      "expected": {
+        "human": "0.00000123"
+      }
+    },
+    {
+      "name": "sats-to-human-trims-trailing-zeros",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "op": "satsToHuman",
+        "sats": "199999000"
+      },
+      "expected": {
+        "human": "1.99999"
+      }
+    }
+  ]
+}

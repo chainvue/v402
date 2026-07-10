@@ -1,0 +1,263 @@
+{
+  "category": "canonical",
+  "generator": "scripts/generate-vectors.ts",
+  "cases": [
+    {
+      "name": "get-minimal",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      }
+    },
+    {
+      "name": "post-with-extensions",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "example.com",
+          "method": "POST",
+          "path": "/api/upload",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.005",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000,
+          "extensions": [
+            {
+              "key": "x-mystartup.orderId",
+              "value": "ord_12345"
+            },
+            {
+              "key": "scheme.bodyHash",
+              "value": "sha256:a1b2c3d4e5f6"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: example.com\nmethod: POST\npath: /api/upload\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.005\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000\nscheme.bodyHash: sha256:a1b2c3d4e5f6\nx-mystartup.orderId: ord_12345"
+      }
+    },
+    {
+      "name": "path-with-query-string",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/search?q=foo%20bar&limit=10",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/search?q=foo%20bar&limit=10\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      }
+    },
+    {
+      "name": "path-with-trailing-slash",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/blocks/",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/blocks/\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      }
+    },
+    {
+      "name": "unicode-payer",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402.日本語@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402.日本語@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      }
+    },
+    {
+      "name": "amount-trailing-zeros",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "1.99999000",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 1.99999000\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      }
+    },
+    {
+      "name": "amount-max-uint64-sats",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "184467440737.09551616",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 184467440737.09551616\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
+      }
+    },
+    {
+      "name": "issued-at-zero",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "GET",
+          "path": "/api/tx/abc",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 0
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 0"
+      }
+    },
+    {
+      "name": "three-extensions-sorted",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "payment",
+        "payload": {
+          "scheme": "verus-prepaid-sig",
+          "schemeVersion": "0.1",
+          "canonicalDomain": "explorer.example.com",
+          "method": "POST",
+          "path": "/graphql",
+          "network": "vrsctest",
+          "asset": "VRSCTEST",
+          "amount": "0.001",
+          "payer": "v402test.demoAgent@",
+          "payTo": "explorerAPI@",
+          "requestId": "01H8XG7Q4M2N8P5R7T3V9WXYZA",
+          "issuedAt": 1783650000,
+          "extensions": [
+            {
+              "key": "x-mystartup.orderId",
+              "value": "ord_12345"
+            },
+            {
+              "key": "iana.reserved",
+              "value": "do-not-use-yet"
+            },
+            {
+              "key": "scheme.bodyHash",
+              "value": "sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "canonical": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: POST\npath: /graphql\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000\niana.reserved: do-not-use-yet\nscheme.bodyHash: sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\nx-mystartup.orderId: ord_12345"
+      }
+    },
+    {
+      "name": "balance-query",
+      "spec": "verus-prepaid-sig-v0.1",
+      "input": {
+        "payloadType": "balanceQuery",
+        "payload": {
+          "canonicalDomain": "facilitator.example.com",
+          "network": "vrsctest",
+          "payer": "v402.demoAgent@",
+          "requestId": "01H8XGABCDEF0123456789QRST",
+          "issuedAt": 1783650000
+        }
+      },
+      "expected": {
+        "canonical": "v402-balance-query/0.1\ncanonicalDomain: facilitator.example.com\nnetwork: vrsctest\npayer: v402.demoAgent@\nrequestId: 01H8XGABCDEF0123456789QRST\nissuedAt: 1783650000"
+      }
+    }
+  ]
+}
