@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-signer-verus",
   "version": "0.1.0",
   "description": "Signer implementations for v402 clients: NodeSigner (Verus daemon signmessage), EnvSigner and FileSigner (local WIF signing, byte-compatible with verusd, validated against the reference test vectors).",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/signer-verus"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/signer-verus#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -23,8 +30,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@chainvue/v402-verus-rpc": "workspace:*",
+    "@chainvue/v402-verus-rpc": "workspace:^",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

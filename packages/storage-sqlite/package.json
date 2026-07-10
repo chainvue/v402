@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-storage-sqlite",
   "version": "0.1.0",
   "description": "SQLite (WAL) implementation of the v402 storage interface — Drizzle schema, embedded migrations, BEGIN IMMEDIATE write transactions, append-only ledger.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/storage-sqlite"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/storage-sqlite#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -25,12 +32,15 @@
     "generate:migrations": "drizzle-kit generate"
   },
   "dependencies": {
-    "@chainvue/v402-storage": "workspace:*",
+    "@chainvue/v402-storage": "workspace:^",
     "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "drizzle-kit": "^0.31.10"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

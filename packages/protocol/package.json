@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-protocol",
   "version": "0.1.0",
   "description": "v402 protocol core: types, wire-format schemas, canonical payload serialization, amount utilities. Framework-agnostic, browser-safe.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/protocol"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/protocol#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -24,5 +31,8 @@
   },
   "dependencies": {
     "zod": "^4.4.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

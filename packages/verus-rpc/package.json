@@ -1,7 +1,14 @@
 {
   "name": "@chainvue/v402-verus-rpc",
   "version": "0.1.0",
-  "description": "Typed Verus daemon JSON-RPC client for v402: the RPC methods the payment stack needs, wrapped in a 500ms-timeout + circuit-breaker policy. Includes a mock implementation for tests.",
+  "description": "Minimal, v402-scoped Verus daemon JSON-RPC client: only the RPC methods the v402 payment stack needs, wrapped in a 500ms-timeout + circuit-breaker policy. Includes a mock implementation for tests. Deliberately not a general-purpose Verus client.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/verus-rpc"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/verus-rpc#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -24,5 +31,8 @@
   },
   "dependencies": {
     "cockatiel": "^4.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

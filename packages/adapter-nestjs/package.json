@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-nestjs",
   "version": "0.1.0",
   "description": "NestJS adapter for v402: PaymentGuard + PaymentInterceptor (two-phase debit), @V402Payment route decorator, V402Module with in-process or facilitator-HTTP verification.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/adapter-nestjs"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/adapter-nestjs#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -23,11 +30,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@chainvue/v402-protocol": "workspace:*",
-    "@chainvue/v402-storage": "workspace:*",
-    "@chainvue/v402-storage-sqlite": "workspace:*",
-    "@chainvue/v402-verifier": "workspace:*",
-    "@chainvue/v402-verus-rpc": "workspace:*"
+    "@chainvue/v402-protocol": "workspace:^",
+    "@chainvue/v402-storage": "workspace:^",
+    "@chainvue/v402-storage-sqlite": "workspace:^",
+    "@chainvue/v402-verifier": "workspace:^",
+    "@chainvue/v402-verus-rpc": "workspace:^"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.0",
@@ -44,5 +51,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "supertest": "^7.2.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

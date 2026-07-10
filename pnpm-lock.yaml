@@ -70,19 +70,19 @@ importers:
   packages/adapter-nestjs:
     dependencies:
       '@chainvue/v402-protocol':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../protocol
       '@chainvue/v402-storage':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage
       '@chainvue/v402-storage-sqlite':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage-sqlite
       '@chainvue/v402-verifier':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../verifier
       '@chainvue/v402-verus-rpc':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../verus-rpc
     devDependencies:
       '@nestjs/common':
@@ -113,10 +113,10 @@ importers:
   packages/client-fetch:
     dependencies:
       '@chainvue/v402-protocol':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../protocol
       '@chainvue/v402-signer-verus':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../signer-verus
     devDependencies:
       '@chainvue/v402-nestjs':
@@ -150,34 +150,34 @@ importers:
   packages/deposit-watcher:
     dependencies:
       '@chainvue/v402-protocol':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../protocol
       '@chainvue/v402-storage':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage
       '@chainvue/v402-verus-rpc':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../verus-rpc
 
   packages/facilitator:
     dependencies:
       '@chainvue/v402-deposit-watcher':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../deposit-watcher
       '@chainvue/v402-protocol':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../protocol
       '@chainvue/v402-storage':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage
       '@chainvue/v402-storage-sqlite':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage-sqlite
       '@chainvue/v402-verifier':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../verifier
       '@chainvue/v402-verus-rpc':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../verus-rpc
       '@nestjs/common':
         specifier: ^11.1.28
@@ -253,7 +253,7 @@ importers:
   packages/signer-verus:
     dependencies:
       '@chainvue/v402-verus-rpc':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../verus-rpc
       '@noble/curves':
         specifier: ^2.2.0
@@ -267,7 +267,7 @@ importers:
   packages/storage-sqlite:
     dependencies:
       '@chainvue/v402-storage':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage
       better-sqlite3:
         specifier: ^12.11.1
@@ -288,13 +288,13 @@ importers:
   packages/verifier:
     dependencies:
       '@chainvue/v402-protocol':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../protocol
       '@chainvue/v402-storage':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../storage
       '@chainvue/v402-verus-rpc':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../verus-rpc
 
   packages/verus-rpc:

@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-storage",
   "version": "0.1.0",
   "description": "Storage interface for the v402 facilitator (identities, deposits, spent requests, append-only ledger, blocklist, watcher cursor, reconciliation) plus an in-memory reference implementation for tests.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/storage"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/storage#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -21,5 +28,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

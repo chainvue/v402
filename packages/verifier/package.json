@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-verifier",
   "version": "0.1.0",
   "description": "Framework-agnostic verification core of v402: multi-scheme registry and the verus-prepaid-sig verifier (RPC mode) — amount pre-check, extension validation, bodyHash policy, timestamp window, two-phase debit against injected storage.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/verifier"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/verifier#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -23,8 +30,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@chainvue/v402-protocol": "workspace:*",
-    "@chainvue/v402-storage": "workspace:*",
-    "@chainvue/v402-verus-rpc": "workspace:*"
+    "@chainvue/v402-protocol": "workspace:^",
+    "@chainvue/v402-storage": "workspace:^",
+    "@chainvue/v402-verus-rpc": "workspace:^"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

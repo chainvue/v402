@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-deposit-watcher",
   "version": "0.1.0",
   "description": "Deposit watcher for the v402 facilitator: real mode (block polling, reorg detection, sender-VerusID attribution, confirmation crediting, re-mine handling) and simulated mode for dev/CI without a Verus node.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/deposit-watcher"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/deposit-watcher#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -23,8 +30,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@chainvue/v402-protocol": "workspace:*",
-    "@chainvue/v402-storage": "workspace:*",
-    "@chainvue/v402-verus-rpc": "workspace:*"
+    "@chainvue/v402-protocol": "workspace:^",
+    "@chainvue/v402-storage": "workspace:^",
+    "@chainvue/v402-verus-rpc": "workspace:^"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

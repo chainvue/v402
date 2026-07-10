@@ -2,6 +2,13 @@
   "name": "@chainvue/v402-client-fetch",
   "version": "0.1.0",
   "description": "v402 client for AI agents and services: wrapFetchWithPayment (transparent 402 handshake) and V402Client (balance, topup, discovery). Parallel-safe ULIDs, normative M5 retry semantics, automatic price-mismatch recovery.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/client-fetch"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/client-fetch#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
@@ -23,8 +30,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@chainvue/v402-protocol": "workspace:*",
-    "@chainvue/v402-signer-verus": "workspace:*"
+    "@chainvue/v402-protocol": "workspace:^",
+    "@chainvue/v402-signer-verus": "workspace:^"
   },
   "devDependencies": {
     "@chainvue/v402-nestjs": "workspace:*",
@@ -36,5 +43,8 @@
     "@nestjs/testing": "^11.1.28",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
