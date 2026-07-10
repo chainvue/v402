@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { StorageError, type IStorage } from "../src/index.js";
+import type { IStorage } from "../src/index.js";
 
 /**
  * Behavioral contract every IStorage implementation must satisfy.
@@ -208,7 +208,12 @@ export function describeStorageContract(name: string, factory: () => Promise<ISt
 
       it("rejects duplicate (txid, vout) inserts", async () => {
         await storage.insertDeposit(depositInput);
-        await expect(storage.insertDeposit(depositInput)).rejects.toBeInstanceOf(StorageError);
+        // matched by name+code, not instanceof — implementations may load the
+        // error class from the built package (different class identity)
+        await expect(storage.insertDeposit(depositInput)).rejects.toMatchObject({
+          name: "StorageError",
+          code: "duplicate-deposit",
+        });
       });
 
       it("reorg of a credited deposit debits the balance, even into negative", async () => {
