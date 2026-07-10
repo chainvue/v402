@@ -1,5 +1,11 @@
-import { Module, type DynamicModule, type OnApplicationShutdown } from "@nestjs/common";
+import {
+  Module,
+  type DynamicModule,
+  type OnApplicationBootstrap,
+  type OnApplicationShutdown,
+} from "@nestjs/common";
 import { Inject, Injectable } from "@nestjs/common";
+import { RealDepositWatcher, SimulatedDepositWatcher, type IWatcher } from "@chainvue/v402-deposit-watcher";
 import type { IStorage } from "@chainvue/v402-storage";
 import { SqliteStorage } from "@chainvue/v402-storage-sqlite";
 import { VerusRpcClient, type IVerusRpc } from "@chainvue/v402-verus-rpc";
@@ -11,6 +17,7 @@ import type { FacilitatorConfig } from "../config/schema.js";
 export const STORAGE = Symbol("STORAGE");
 export const VERUS_RPC = Symbol("VERUS_RPC");
 export const VERIFIER_REGISTRY = Symbol("VERIFIER_REGISTRY");
+export const WATCHER = Symbol("WATCHER");
 
 @Injectable()
 class StorageLifecycle implements OnApplicationShutdown {
@@ -18,6 +25,19 @@ class StorageLifecycle implements OnApplicationShutdown {
 
   async onApplicationShutdown(): Promise<void> {
     await this.storage.close();
+  }
+}
+
+@Injectable()
+class WatcherLifecycle implements OnApplicationBootstrap, OnApplicationShutdown {
+  constructor(@Inject(WATCHER) private readonly watcher: IWatcher) {}
+
+  onApplicationBootstrap(): void {
+    this.watcher.start();
+  }
+
+  async onApplicationShutdown(): Promise<void> {
+    await this.watcher.stop();
   }
 }
 
@@ -83,9 +103,40 @@ export class CoreModule {
             return registry;
           },
         },
+        {
+          provide: WATCHER,
+          inject: [V402_CONFIG, STORAGE, VERUS_RPC],
+          useFactory: (config: FacilitatorConfig, storage: IStorage, rpc: IVerusRpc): IWatcher => {
+            const currency = config.schemes[0]!.config.asset;
+            if (config.watcher.mode === "simulated") {
+              return new SimulatedDepositWatcher({
+                storage,
+                config: {
+                  currency,
+                  minConfirmations: config.watcher.minConfirmations,
+                  nodeEnv: config.nodeEnv,
+                  allowInProduction: config.ops.allowSimulatedInProd,
+                },
+              });
+            }
+            return new RealDepositWatcher({
+              rpc,
+              storage,
+              config: {
+                payToIdentity: config.schemes[0]!.config.payToIdentity,
+                chainName: config.verus.chain,
+                currency,
+                intervalMs: config.watcher.intervalMs,
+                minConfirmations: config.watcher.minConfirmations,
+                reorgLookbackBlocks: config.watcher.reorgLookbackBlocks,
+              },
+            });
+          },
+        },
         StorageLifecycle,
+        WatcherLifecycle,
       ],
-      exports: [STORAGE, VERUS_RPC, VERIFIER_REGISTRY],
+      exports: [STORAGE, VERUS_RPC, VERIFIER_REGISTRY, WATCHER],
     };
   }
 }

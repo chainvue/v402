@@ -62,6 +62,8 @@ export interface IStorage {
   /** Replay-retention cleanup: delete rows with `issuedAt < cutoff`. Returns count. */
   cleanupSpentRequests(cutoffIssuedAt: number): Promise<number>;
   getSpentRequest(requestId: string): Promise<SpentRequestRecord | undefined>;
+  /** Sum of currently reserved amounts for an identity — the balance endpoint's `reserved` figure. */
+  sumReservedSats(identityId: string): Promise<bigint>;
   /** Replay-protected signed balance query — row with amount 0, immediately committed. */
   recordBalanceQuery(input: RecordBalanceQueryInput): Promise<RecordBalanceQueryResult>;
 

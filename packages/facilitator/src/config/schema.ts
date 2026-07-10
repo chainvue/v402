@@ -51,6 +51,7 @@ export const facilitatorConfigSchema = z
       .min(1),
     defaultScheme: z.string().min(1).default(SCHEME_VERUS_PREPAID_SIG),
     payment: z.object({
+      specUrl: z.string().min(1).default("https://github.com/chainvue/v402/tree/main/spec"),
       canonicalDomain: z.string().min(1).default("localhost:3000"),
       timestampToleranceSec: z.number().int().positive().default(300),
       /** Reaper threshold (B3) — MUST exceed the slowest endpoint's runtime. */

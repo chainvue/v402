@@ -167,6 +167,16 @@ export function describeStorageContract(name: string, factory: () => Promise<ISt
         expect(await storage.getSpentRequest("01NEW")).toBeDefined();
       });
 
+      it("sums only currently reserved amounts per identity", async () => {
+        await fund("agent@", 100_000n);
+        await storage.reservePayment(reserveInput("01R1", "agent@", 10_000n));
+        await storage.reservePayment(reserveInput("01R2", "agent@", 5_000n));
+        await storage.reservePayment(reserveInput("01R3", "agent@", 7_000n));
+        await storage.commitPayment("01R3", 1, T0 + 2); // committed rows don't count
+        expect(await storage.sumReservedSats("agent@")).toBe(15_000n);
+        expect(await storage.sumReservedSats("other@")).toBe(0n);
+      });
+
       it("balance queries are replay-protected zero-amount committed rows", async () => {
         const input = {
           requestId: "01BQ",

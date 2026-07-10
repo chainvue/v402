@@ -349,6 +349,17 @@ export class SqliteStorage implements IStorage {
     return row ? this.mapSpentRequest(row) : undefined;
   }
 
+  async sumReservedSats(identityId: string): Promise<bigint> {
+    const rows = this.use()
+      .select({ amount: spentRequests.amount })
+      .from(spentRequests)
+      .where(and(eq(spentRequests.identityId, identityId), eq(spentRequests.status, "reserved")))
+      .all();
+    let sum = 0n;
+    for (const row of rows) sum += BigInt(row.amount);
+    return sum;
+  }
+
   async recordBalanceQuery(input: RecordBalanceQueryInput): Promise<RecordBalanceQueryResult> {
     try {
       return this.writeTx((tx): RecordBalanceQueryResult => {

@@ -190,6 +190,14 @@ export class InMemoryStorage implements IStorage {
     return row === undefined ? undefined : { ...row };
   }
 
+  async sumReservedSats(identityId: string): Promise<bigint> {
+    let sum = 0n;
+    for (const row of this.spentRequests.values()) {
+      if (row.identityId === identityId && row.status === "reserved") sum += row.amountSats;
+    }
+    return sum;
+  }
+
   async recordBalanceQuery(input: RecordBalanceQueryInput): Promise<RecordBalanceQueryResult> {
     const existing = this.spentRequests.get(input.requestId);
     if (existing) return { status: "replay", previousStatus: existing.status };
