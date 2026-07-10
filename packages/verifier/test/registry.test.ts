@@ -5,6 +5,9 @@ function stubVerifier(scheme: string): SchemeVerifier {
   return {
     scheme,
     schemeVersions: ["0.1"],
+    verify: async () => {
+      throw new Error("not implemented");
+    },
     verifyAndReserve: async () => {
       throw new Error("not implemented");
     },

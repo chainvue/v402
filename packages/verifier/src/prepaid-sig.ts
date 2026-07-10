@@ -23,6 +23,7 @@ import type {
   RoutePolicy,
   SchemeVerifier,
   VerifyAndReserveResult,
+  VerifyResult,
   VerifyError,
   VerifyErrorCode,
 } from "./types.js";
@@ -92,7 +93,64 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
     this.now = deps.now ?? (() => Math.floor(Date.now() / 1000));
   }
 
+  /** Stateless verification: all checks incl. the signature RPC, no storage writes. */
+  async verify(request: IncomingPaymentRequest, policy: RoutePolicy): Promise<VerifyResult> {
+    const checked = await this.runChecks(request, policy);
+    if (!checked.ok) return checked;
+    return {
+      ok: true,
+      requestId: checked.claim.requestId,
+      payer: checked.identityKey,
+      amountSats: humanToSats(policy.priceHuman),
+    };
+  }
+
   async verifyAndReserve(request: IncomingPaymentRequest, policy: RoutePolicy): Promise<VerifyAndReserveResult> {
+    const checked = await this.runChecks(request, policy);
+    if (!checked.ok) return checked;
+    const { claim, identityKey, receivedAt } = checked;
+
+    const reserved = await this.storage.reservePayment({
+      requestId: claim.requestId,
+      identityId: identityKey,
+      issuedAt: claim.issuedAt,
+      receivedAt,
+      amountSats: humanToSats(policy.priceHuman),
+      method: request.method,
+      path: request.path,
+    });
+    switch (reserved.status) {
+      case "reserved":
+        return {
+          ok: true,
+          requestId: claim.requestId,
+          payer: identityKey,
+          amountSats: humanToSats(policy.priceHuman),
+          balanceAfterSats: reserved.balanceAfterSats,
+        };
+      case "replay":
+        return fail(409, "replay", "requestId already spent", { previousStatus: reserved.previousStatus });
+      case "insufficient":
+        return fail(402, "insufficient-balance", "prepaid balance too low", {
+          balanceSats: reserved.balanceSats.toString(),
+          requiredSats: humanToSats(policy.priceHuman).toString(),
+          depositAddress: this.config.payTo,
+        });
+      case "unknown-identity":
+        return fail(402, "no-balance", "identity has no balance — deposit first", {
+          depositAddress: this.config.payTo,
+        });
+    }
+  }
+
+  /** Shared check pipeline through signature verification (steps 1–7 of the guard order). */
+  private async runChecks(
+    request: IncomingPaymentRequest,
+    policy: RoutePolicy,
+  ): Promise<
+    | { ok: true; claim: PaymentClaim; identityKey: string; receivedAt: number }
+    | { ok: false; error: VerifyError }
+  > {
     // 1. Headers
     const parsed = parsePaymentHeaders(request.headers);
     if (!parsed.ok) return fail(400, "invalid-headers", parsed.error);
@@ -180,38 +238,7 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
     }
     if (!signatureValid) return fail(402, "invalid-signature", "signature verification failed");
 
-    // 8. Atomic phase-1 debit
-    const reserved = await this.storage.reservePayment({
-      requestId: claim.requestId,
-      identityId: identityKey,
-      issuedAt: claim.issuedAt,
-      receivedAt: nowSec,
-      amountSats: humanToSats(policy.priceHuman),
-      method: request.method,
-      path: request.path,
-    });
-    switch (reserved.status) {
-      case "reserved":
-        return {
-          ok: true,
-          requestId: claim.requestId,
-          payer: identityKey,
-          amountSats: humanToSats(policy.priceHuman),
-          balanceAfterSats: reserved.balanceAfterSats,
-        };
-      case "replay":
-        return fail(409, "replay", "requestId already spent", { previousStatus: reserved.previousStatus });
-      case "insufficient":
-        return fail(402, "insufficient-balance", "prepaid balance too low", {
-          balanceSats: reserved.balanceSats.toString(),
-          requiredSats: humanToSats(policy.priceHuman).toString(),
-          depositAddress: this.config.payTo,
-        });
-      case "unknown-identity":
-        return fail(402, "no-balance", "identity has no balance — deposit first", {
-          depositAddress: this.config.payTo,
-        });
-    }
+    return { ok: true, claim, identityKey, receivedAt: nowSec };
   }
 
   private decodeExtensions(

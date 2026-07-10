@@ -1,7 +1,9 @@
 import { Module, type DynamicModule } from "@nestjs/common";
 import { LoggerModule } from "nestjs-pino";
+import { ApiModule } from "./api/api.module.js";
 import { V402ConfigModule, V402_CONFIG } from "./config/config.module.js";
 import type { FacilitatorConfig } from "./config/schema.js";
+import { CoreModule } from "./core/core.module.js";
 import { MetricsModule } from "./metrics/metrics.module.js";
 
 /**
@@ -31,6 +33,8 @@ export class AppModule {
           }),
         }),
         MetricsModule,
+        CoreModule.forRoot(),
+        ApiModule,
       ],
     };
   }

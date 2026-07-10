@@ -123,6 +123,23 @@ function b64(text: string): string {
   return Buffer.from(text, "utf8").toString("base64");
 }
 
+describe("verify — stateless (POST /v1/verify semantics)", () => {
+  it("verifies without writing any storage state and without checking balance", async () => {
+    const { verifier, storage } = await setup(); // no balance at all
+    const result = await verifier.verify(requestFor(), POLICY);
+    expect(result).toEqual({ ok: true, requestId: REQUEST_ID, payer: PAYER_KEY, amountSats: 100_000n });
+    expect(await storage.getSpentRequest(REQUEST_ID)).toBeUndefined(); // nothing burned
+    // repeatable — stateless calls are not replays
+    expect((await verifier.verify(requestFor(), POLICY)).ok).toBe(true);
+  });
+
+  it("returns the same pre-check errors as verifyAndReserve", async () => {
+    const { verifier } = await setup();
+    const result = await verifier.verify(requestFor({ amount: "0.002" }), POLICY);
+    expect(!result.ok && result.error).toMatchObject({ httpStatus: 402, code: "price-mismatch" });
+  });
+});
+
 describe("verifyAndReserve — happy paths", () => {
   it("verifies against the byte-exact canonical rebuild and reserves", async () => {
     const { verifier, storage, capturedCanonicals } = await setup({ balanceSats: 100_000n });

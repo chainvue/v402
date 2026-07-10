@@ -61,6 +61,17 @@ export interface VerifyError {
   details?: Record<string, unknown>;
 }
 
+/** Stateless verification (plan: POST /v1/verify) — everything up to but excluding the debit. */
+export type VerifyResult =
+  | {
+      ok: true;
+      requestId: string;
+      /** Normalized identity key (balance account) — not necessarily the payer string as signed. */
+      payer: string;
+      amountSats: bigint;
+    }
+  | { ok: false; error: VerifyError };
+
 export type VerifyAndReserveResult =
   | {
       ok: true;
@@ -100,6 +111,8 @@ export type RollbackResult =
 export interface SchemeVerifier {
   readonly scheme: string;
   readonly schemeVersions: string[];
+  /** Stateless: all checks incl. the signature RPC, no storage writes (POST /v1/verify). */
+  verify(request: IncomingPaymentRequest, policy: RoutePolicy): Promise<VerifyResult>;
   verifyAndReserve(request: IncomingPaymentRequest, policy: RoutePolicy): Promise<VerifyAndReserveResult>;
   commit(requestId: string, responseBytes: number): Promise<CommitResult>;
   rollback(requestId: string): Promise<RollbackResult>;

@@ -8,6 +8,7 @@ export type {
   IncomingPaymentRequest,
   RoutePolicy,
   SchemeVerifier,
+  VerifyResult,
   VerifyAndReserveResult,
   CommitResult,
   RollbackResult,
