@@ -8,9 +8,15 @@ importers:
 
   .:
     devDependencies:
+      '@chainvue/v402-client-fetch':
+        specifier: workspace:*
+        version: link:packages/client-fetch
       '@chainvue/v402-protocol':
         specifier: workspace:*
         version: link:packages/protocol
+      '@chainvue/v402-signer-verus':
+        specifier: workspace:*
+        version: link:packages/signer-verus
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1

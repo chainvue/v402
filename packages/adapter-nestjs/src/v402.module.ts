@@ -64,7 +64,7 @@ export class V402Module {
               registry.register(
                 new HttpFacilitatorVerifier({
                   scheme: SCHEME_VERUS_PREPAID_SIG,
-                  baseUrl: options.facilitatorUrl,
+                  baseUrl: options.facilitatorInternalUrl ?? options.facilitatorUrl,
                   authToken: options.facilitatorAuthToken,
                   ...(options.middlewareId !== undefined ? { middlewareId: options.middlewareId } : {}),
                   ...(options.fetchImpl !== undefined ? { fetchImpl: options.fetchImpl } : {}),

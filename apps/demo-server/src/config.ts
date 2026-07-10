@@ -17,7 +17,8 @@ export function demoOptionsFromEnv(env: NodeJS.ProcessEnv): V402ModuleOptions {
   if (env["FACILITATOR_URL"] !== undefined) {
     return {
       mode: "http",
-      ...advertisement,
+      ...advertisement, // advertises the PUBLIC facilitator URL to clients
+      facilitatorInternalUrl: env["FACILITATOR_URL"], // what this middleware calls
       facilitatorAuthToken: env["FACILITATOR_AUTH_TOKEN"] ?? "",
       middlewareId: "demo-server",
     };

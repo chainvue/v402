@@ -29,6 +29,12 @@ export interface V402InProcessOptions extends PaymentAdvertisement {
 
 export interface V402HttpOptions extends PaymentAdvertisement {
   mode: "http";
+  /**
+   * URL the middleware itself calls (e.g. http://facilitator:3000 inside
+   * compose). Defaults to `facilitatorUrl` — but the advertised URL is what
+   * CLIENTS reach, which may differ from the in-cluster address.
+   */
+  facilitatorInternalUrl?: string;
   /** Per-middleware token provisioned by the facilitator operator. */
   facilitatorAuthToken: string;
   /** Identifies this middleware in the facilitator's logs (Basic username). */

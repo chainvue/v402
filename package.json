@@ -17,10 +17,13 @@
     "lint": "pnpm -r --if-present run lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "generate:vectors": "pnpm --filter @chainvue/v402-protocol build && node scripts/generate-vectors.ts"
+    "generate:vectors": "pnpm --filter @chainvue/v402-protocol build && node scripts/generate-vectors.ts",
+    "smoke": "node scripts/e2e-smoke.ts"
   },
   "devDependencies": {
+    "@chainvue/v402-client-fetch": "workspace:*",
     "@chainvue/v402-protocol": "workspace:*",
+    "@chainvue/v402-signer-verus": "workspace:*",
     "@types/node": "^26.1.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
