@@ -107,6 +107,10 @@ export class VerusRpcClient implements IVerusRpc {
     return this.call("getidentity", [nameOrAddress]);
   }
 
+  getCurrencyBalance(addressOrIdentity: string, minConf = 1): Promise<Record<string, number> | number> {
+    return this.call("getcurrencybalance", [addressOrIdentity, minConf]);
+  }
+
   signMessage(signer: string, message: string): Promise<SignMessageResult> {
     return this.call("signmessage", [signer, message]);
   }

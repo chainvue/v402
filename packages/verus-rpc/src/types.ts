@@ -115,6 +115,8 @@ export interface IVerusRpc {
   getBlockVerbose(hashOrHeight: string | number): Promise<VerusBlockVerbose>;
   getRawTransaction(txid: string): Promise<VerusRawTransaction>;
   getIdentity(nameOrAddress: string): Promise<VerusIdentityResult>;
+  /** Balances by currency for an address/identity (reconciliation on-chain crosscheck). */
+  getCurrencyBalance(addressOrIdentity: string, minConf?: number): Promise<Record<string, number> | number>;
   signMessage(signer: string, message: string): Promise<SignMessageResult>;
   verifyMessage(signer: string, signature: string, message: string): Promise<boolean>;
   /** Returns the operation id (z_getoperationstatus tracks completion). */

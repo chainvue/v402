@@ -61,6 +61,14 @@ export class MockVerusRpc implements IVerusRpc {
     );
   }
 
+  getCurrencyBalance(addressOrIdentity: string, minConf?: number): Promise<Record<string, number> | number> {
+    return this.dispatch(
+      "getCurrencyBalance",
+      [addressOrIdentity, minConf],
+      this.impl.getCurrencyBalance && (() => this.impl.getCurrencyBalance!(addressOrIdentity, minConf)),
+    );
+  }
+
   signMessage(signer: string, message: string): Promise<SignMessageResult> {
     return this.dispatch(
       "signMessage",
