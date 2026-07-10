@@ -57,7 +57,7 @@ Request (identical body for `/v1/reserve`):
 {
   "method": "GET",
   "path": "/api/tx/abc",
-  "headers": { "x-v402-scheme": "verus-prepaid-sig", "x-v402-payer": "…", "…": "…" },
+  "headers": { "x-v402-scheme": "verus-prepaid-sig/0.1", "x-v402-payer": "…", "…": "…" },
   "rawBodyBase64": "…",
   "policy": { "priceHuman": "0.001", "bodyHashPolicy": "optional" }
 }
