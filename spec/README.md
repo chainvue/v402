@@ -13,7 +13,7 @@ reference test vectors.
 
 | Version | Status | Documents |
 |---|---|---|
-| **v402/0.1** | Draft — in progress | [`0.1/`](./0.1/) |
+| **v402/0.1** | Normative (frozen 2026-07-10) | [`0.1/`](./0.1/) |
 
 A protocol version governs the envelope (402 response shape, discovery format,
 header names, extension mechanics). Payment **schemes** version independently —

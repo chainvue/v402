@@ -6,7 +6,10 @@ Coinbase's x402 spec but replaces the EVM payment layer with a Verus-native sche
 (`verus-prepaid-sig`): VerusID for identity, off-chain signatures for zero-latency
 authentication, and a prepaid balance model for near-zero per-request cost.
 
-**Status: pre-alpha — Etappe 1 (MVP) in progress.** Nothing here is published or stable yet.
+**Status: alpha — Etappe 1 (MVP) complete, spec 0.1 frozen.** The reference stack
+(protocol → verifier → facilitator → middleware → client) is implemented and
+verified end-to-end against VRSCTEST, including a real on-chain deposit run.
+The `spec/0.1/` documents are normative. Packages are not yet published to npm.
 
 ## Licensing — read this first
 
@@ -48,12 +51,19 @@ pnpm typecheck
 Copy `.env.example` to `.env` and fill in your values — see the comments in that file.
 Real secrets never enter the repo.
 
-Package code lands layer by layer per the delivery plan (`PLAN.md`); until Layer 1+
-ships, `packages/` and `apps/` are intentionally empty.
+Integration tests that need a Verus node are gated behind `VERUS_RPC_URL` and
+skip cleanly without one. The Docker stack (`docker-compose.yml`) boots the
+facilitator + demo-server pair; the contributor quickstart with simulated
+deposits needs no Verus node at all (see the compose file header).
+
+Integration guides live in [`docs/integration/`](./docs/integration/);
+implementation decisions and risks are logged in [`docs/RISKS.md`](./docs/RISKS.md).
 
 ## Spec
 
-Start at [`spec/README.md`](./spec/README.md). Current version: **v402/0.1 (draft)**.
+Start at [`spec/README.md`](./spec/README.md). Current version: **v402/0.1** —
+the [`spec/0.1/`](./spec/0.1/) documents are normative, conformance is defined
+by the [reference test vectors](./spec/0.1/test-vectors/).
 Governance (BDFL model during v0.x, transition plan to a TSC) is documented in
 [`spec/governance.md`](./spec/governance.md).
 

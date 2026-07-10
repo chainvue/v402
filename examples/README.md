@@ -1,4 +1,6 @@
 # Examples
 
 Snippet-only examples (not published, not part of the pnpm workspace).
-Populated once the client libraries exist (Etappe 1, Layer 6).
+Nothing here yet — for working integration code see
+[`apps/demo-server`](../apps/demo-server) (a complete priced API) and the
+[integration guides](../docs/integration/).
