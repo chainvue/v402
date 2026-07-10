@@ -1,0 +1,26 @@
+export type { IStorage } from "./interface.js";
+export { InMemoryStorage } from "./memory.js";
+export {
+  StorageError,
+  type IdentityRecord,
+  type SpentRequestStatus,
+  type SpentRequestRecord,
+  type DepositOrigin,
+  type DepositRecord,
+  type LedgerKind,
+  type LedgerReason,
+  type LedgerEntry,
+  type LedgerSummary,
+  type BlockedIdentityRecord,
+  type WatcherCursor,
+  type ReconciliationRun,
+  type ReservePaymentInput,
+  type ReservePaymentResult,
+  type ConditionalUpdateResult,
+  type LateCommitResult,
+  type RecordBalanceQueryInput,
+  type RecordBalanceQueryResult,
+  type InsertDepositInput,
+  type CreditDepositResult,
+  type MarkReorgedResult,
+} from "./types.js";
