@@ -9,18 +9,17 @@ import { V402Payment } from "@chainvue/v402-nestjs";
  */
 @Controller()
 export class DemoController {
-  /** Free: service info + the rate card. */
+  /**
+   * Free: service info. The rate card lives at /.well-known/v402 (served by
+   * the adapter, derived from the @V402Payment metadata below — a single
+   * source of truth instead of a hand-maintained list).
+   */
   @Get()
   index(): unknown {
     return {
       service: "v402 demo server",
       docs: "https://github.com/chainvue/v402",
-      endpoints: [
-        { method: "GET", path: "/api/status", price: "0.0001" },
-        { method: "GET", path: "/api/tx/:txid", price: "0.001" },
-        { method: "GET", path: "/api/report", price: "0.01" },
-        { method: "POST", path: "/api/graphql", price: "0.002", bodyHash: "required" },
-      ],
+      discovery: "/.well-known/v402",
     };
   }
 

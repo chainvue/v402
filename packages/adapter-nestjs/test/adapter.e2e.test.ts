@@ -3,6 +3,7 @@ import { Controller, Get, HttpException, INestApplication, Module, NotFoundExcep
 import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { PROTOCOL_VERSION, discoveryDocumentSchema } from "@chainvue/v402-protocol";
 import { InMemoryStorage } from "@chainvue/v402-storage";
 import { MockVerusRpc } from "@chainvue/v402-verus-rpc";
 import { V402Module, V402Payment } from "../src/index.js";
@@ -203,5 +204,73 @@ describe("@chainvue/v402-nestjs adapter (e2e, in-process mode)", () => {
       .set(paymentHeaders({ "x-v402-amount": "0.002" }))
       .send({ some: "body" })
       .expect(500);
+  });
+
+  describe("GET /.well-known/v402 (discovery)", () => {
+    it("serves a valid discovery document with the rate card from route metadata", async () => {
+      const response = await request(app.getHttpServer()).get("/.well-known/v402").expect(200);
+      // clients parse this with the protocol's (loose) discovery schema
+      expect(discoveryDocumentSchema.safeParse(response.body).success).toBe(true);
+      expect(response.body).toMatchObject({
+        defaultVersion: PROTOCOL_VERSION,
+        canonicalDomain: "explorer.example.com",
+        network: "vrsctest",
+        defaultScheme: "verus-prepaid-sig",
+        facilitator: "http://facilitator.local:3000",
+        topup: {
+          depositAddress: "explorerAPI@",
+          attribution: "sender-verusid",
+          instructionsEndpoint: "http://facilitator.local:3000/v1/topup-instructions",
+        },
+      });
+      expect(response.body.schemes).toEqual([
+        { scheme: "verus-prepaid-sig", schemeVersion: "0.1", network: "vrsctest", asset: "VRSCTEST", payTo: "explorerAPI@" },
+      ]);
+      // the rate card IS the decorator metadata — free routes absent, sorted by path
+      expect(response.body.endpoints).toEqual([
+        { method: "GET", path: "/api/tx/:id", amount: "0.001", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "optional" },
+        { method: "GET", path: "/boom", amount: "0.001", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "optional" },
+        { method: "GET", path: "/missing", amount: "0.001", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "optional" },
+        { method: "POST", path: "/upload", amount: "0.002", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "required" },
+      ]);
+    });
+
+    it("the discovery route itself is free (no payment headers required)", async () => {
+      await request(app.getHttpServer()).get("/.well-known/v402").expect(200);
+    });
+  });
+});
+
+describe("discovery opt-out (discovery: false)", () => {
+  it("does not register the .well-known route", async () => {
+    const storage = new InMemoryStorage();
+    await storage.initialize();
+    @Module({
+      imports: [
+        V402Module.forRoot({
+          canonicalDomain: "explorer.example.com",
+          network: "vrsctest",
+          asset: "VRSCTEST",
+          payTo: "explorerAPI@",
+          facilitatorUrl: "http://facilitator.local:3000",
+          db: { path: ":memory:" },
+          verus: { rpcUrl: "http://unused", rpcUser: "", rpcPass: "" },
+          storage,
+          verusRpc: new MockVerusRpc({ verifyMessage: async () => true }),
+          discovery: false,
+        }),
+      ],
+      controllers: [DemoController],
+    })
+    class OptOutAppModule {}
+
+    const moduleRef = await Test.createTestingModule({ imports: [OptOutAppModule] }).compile();
+    const app = moduleRef.createNestApplication();
+    await app.init();
+    try {
+      await request(app.getHttpServer()).get("/.well-known/v402").expect(404);
+    } finally {
+      await app.close();
+    }
   });
 });

@@ -4,6 +4,7 @@ export { PaymentGuard, V402_REGISTRY, V402_ADVERTISEMENT } from "./payment.guard
 export { PaymentInterceptor } from "./payment.interceptor.js";
 export { HttpFacilitatorVerifier, type HttpFacilitatorVerifierOptions } from "./http-verifier.js";
 export { build402Body } from "./accepts.js";
+export { V402DiscoveryController, type DiscoveredEndpoint } from "./discovery.controller.js";
 export {
   V402_CONTEXT,
   type PaymentAdvertisement,
@@ -12,5 +13,6 @@ export {
   type V402ModuleOptions,
   type V402InProcessOptions,
   type V402HttpOptions,
+  type V402SharedOptions,
   type RequestWithV402,
 } from "./types.js";

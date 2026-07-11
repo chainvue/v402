@@ -56,9 +56,9 @@ async function main(): Promise<void> {
   const health = await json(`${FACILITATOR}/v1/health`);
   assertEqual(health.status, 200, "facilitator health");
   log(`facilitator healthy (watcher=${health.body.watcher.mode}, rpc reachable=${health.body.verusRpc.reachable})`);
-  const rateCard = await json(DEMO);
-  assertEqual(rateCard.status, 200, "demo rate card");
-  log(`demo-server up (${rateCard.body.endpoints.length} priced endpoints)`);
+  const rateCard = await json(`${DEMO}/.well-known/v402`);
+  assertEqual(rateCard.status, 200, "demo discovery/rate card");
+  log(`demo-server up (${rateCard.body.endpoints.length} priced endpoints via /.well-known/v402)`);
   const discovery = await client.discover();
   assertEqual(discovery.defaultVersion, "v402/0.1", "discovery defaultVersion");
   log(`discovery ok (schemes: ${(discovery as any).schemes.map((s: any) => s.scheme).join(", ")})`);

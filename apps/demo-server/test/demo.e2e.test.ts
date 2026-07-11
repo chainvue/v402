@@ -78,9 +78,19 @@ describe("demo-server smoke test (plan step 19)", () => {
     await app.close();
   });
 
-  it("serves the free rate card", async () => {
+  it("serves the free index pointing at the discovery document", async () => {
     const response = await request(app.getHttpServer()).get("/").expect(200);
-    expect(response.body.endpoints).toHaveLength(4);
+    expect(response.body.discovery).toBe("/.well-known/v402");
+  });
+
+  it("serves the rate card at /.well-known/v402 derived from route metadata", async () => {
+    const response = await request(app.getHttpServer()).get("/.well-known/v402").expect(200);
+    expect(response.body.endpoints).toEqual([
+      { method: "POST", path: "/api/graphql", amount: "0.002", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "required" },
+      { method: "GET", path: "/api/report", amount: "0.01", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "optional" },
+      { method: "GET", path: "/api/status", amount: "0.0001", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "optional" },
+      { method: "GET", path: "/api/tx/:txid", amount: "0.001", amountUnit: "human", asset: "VRSCTEST", bodyHashPolicy: "optional" },
+    ]);
   });
 
   it.each([

@@ -16,7 +16,18 @@ export interface PaymentAdvertisement {
   facilitatorUrl: string;
 }
 
-export interface V402InProcessOptions extends PaymentAdvertisement {
+/** Options shared by both adapter modes beyond the advertisement fields. */
+export interface V402SharedOptions {
+  /**
+   * Serve `GET /.well-known/v402` with the schemes/topup advertisement and
+   * an `endpoints` rate card derived from @V402Payment metadata (single
+   * source of truth). Default true; set false if the app provides its own
+   * discovery document.
+   */
+  discovery?: boolean;
+}
+
+export interface V402InProcessOptions extends PaymentAdvertisement, V402SharedOptions {
   mode?: "in-process";
   db: { path: string; walMode?: boolean };
   verus: Pick<VerusRpcConfig, "rpcUrl" | "rpcUser" | "rpcPass" | "circuit">;
@@ -27,7 +38,7 @@ export interface V402InProcessOptions extends PaymentAdvertisement {
   verusRpc?: IVerusRpc;
 }
 
-export interface V402HttpOptions extends PaymentAdvertisement {
+export interface V402HttpOptions extends PaymentAdvertisement, V402SharedOptions {
   mode: "http";
   /**
    * URL the middleware itself calls (e.g. http://facilitator:3000 inside

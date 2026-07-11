@@ -1,5 +1,6 @@
 import { Inject, Injectable, Module, type DynamicModule, type OnApplicationShutdown } from "@nestjs/common";
-import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR, DiscoveryModule } from "@nestjs/core";
+import { V402DiscoveryController } from "./discovery.controller.js";
 import { SCHEME_VERUS_PREPAID_SIG } from "@chainvue/v402-protocol";
 import type { IStorage } from "@chainvue/v402-storage";
 import { SqliteStorage } from "@chainvue/v402-storage-sqlite";
@@ -44,6 +45,9 @@ export class V402Module {
     return {
       module: V402Module,
       global: true,
+      imports: [DiscoveryModule],
+      // discovery: false opts out for apps that serve their own document
+      controllers: options.discovery === false ? [] : [V402DiscoveryController],
       providers: [
         { provide: V402_ADVERTISEMENT, useValue: advertisement },
         {
