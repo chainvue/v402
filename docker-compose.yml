@@ -30,6 +30,9 @@ services:
       V402_PAY_TO: ${V402_PAY_TO:-v402-facilitator@}
       V402_CANONICAL_DOMAIN: ${V402_CANONICAL_DOMAIN:-localhost:3001}
       V402_WATCHER_MODE: ${V402_WATCHER_MODE:-real}
+      # rpc (verifymessage per request) | offline (local recovery, cached identity state)
+      V402_VERIFIER_MODE: ${V402_VERIFIER_MODE:-rpc}
+      V402_IDENTITY_CACHE_TTL_SEC: ${V402_IDENTITY_CACHE_TTL_SEC:-60}
       V402_ALLOW_SIMULATED_IN_PROD: ${V402_ALLOW_SIMULATED_IN_PROD:-}
       FACILITATOR_AUTH_TOKEN: ${FACILITATOR_AUTH_TOKEN:?set FACILITATOR_AUTH_TOKEN — the middleware token}
       V402_ADMIN_TOKEN: ${V402_ADMIN_TOKEN:-}
