@@ -14,8 +14,10 @@ the verifier library directly) and **http** (this API). Switching is a
 configuration change; the method shapes below mirror the library interface
 one-to-one.
 
-An OpenAPI document generated from the reference TypeScript types is planned
-(Etappe 2 roadmap); this markdown is normative until then.
+A machine-readable OpenAPI 3.1 document lives alongside this file
+(`facilitator-api.openapi.yaml`), validated against the reference
+implementation on every CI run. This markdown remains normative; on any
+conflict the markdown wins.
 
 ## Conventions
 

@@ -1,0 +1,726 @@
+# OpenAPI document for the v402/0.1 facilitator HTTP API.
+#
+# The prose contract lives in facilitator-api.md (normative). This document
+# mirrors it machine-readably for implementers and client generators; on any
+# conflict the markdown wins until this file is declared normative.
+#
+# Anti-drift: packages/facilitator/test/openapi.e2e.test.ts boots the
+# reference facilitator and validates real responses against the schemas
+# below on every CI run — edits here must keep that suite green.
+#
+# Conventions encoded in the schemas:
+# - satoshi amounts are DECIMAL STRINGS (never JSON numbers)
+# - error envelope: { ok: false, error: { code, message, details? } }
+# - error codes are stable identifiers but NOT a closed enum — clients MUST
+#   tolerate unknown codes and fields (additive changes are MINOR)
+openapi: 3.1.0
+info:
+  title: v402 Facilitator API
+  version: "0.1"
+  description: >-
+    Payment-infrastructure service between customer and API operator:
+    signature verification, balance state, deposit watching, blocklist
+    enforcement. Contract for any implementation (middleware calling a
+    facilitator, or a facilitator serving middlewares). See
+    facilitator-api.md for normative prose and the error catalog.
+  license:
+    name: CC-BY-4.0
+    url: https://creativecommons.org/licenses/by/4.0/
+
+security: []
+
+tags:
+  - name: payment
+    description: Middleware-token (HTTP Basic) protected payment lifecycle
+  - name: public
+    description: Unauthenticated endpoints
+  - name: admin
+    description: Bearer-token protected operator endpoints
+
+paths:
+  /v1/verify:
+    post:
+      tags: [payment]
+      operationId: verify
+      summary: Stateless verification — no storage writes, nothing reserved
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentRequest" }
+      responses:
+        "201":
+          description: Signature and payload valid right now
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerifyResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /v1/reserve:
+    post:
+      tags: [payment]
+      operationId: reserve
+      summary: Verify + phase-1 debit (burn requestId, decrement balance)
+      description: >-
+        Idempotent per requestId — a repeat answers 409 `replay` with
+        `details.previousStatus`, which IS the authoritative answer for a
+        retrying client (M5).
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentRequest" }
+      responses:
+        "201":
+          description: Reserved — amount debited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReserveResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /v1/commit:
+    post:
+      tags: [payment]
+      operationId: commit
+      summary: Phase 2, success — finalize the reservation
+      description: >-
+        Idempotent (`alreadyCommitted: true` on repeat). Late commit (B3):
+        if the reaper already refunded, the facilitator re-debits and answers
+        `late: true` plus `balanceAfterSats` (MAY be negative).
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommitRequest" }
+      responses:
+        "201":
+          description: Committed (or already committed)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommitResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /v1/rollback:
+    post:
+      tags: [payment]
+      operationId: rollback
+      summary: Phase 2, failure — refund the reservation
+      description: >-
+        Refunds the reserved amount, marks the request errored; the requestId
+        stays burned for the replay window. Idempotent. Normative middleware
+        semantics — commit on 2xx AND definitive 4xx; rollback only for ≥500.
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RollbackRequest" }
+      responses:
+        "201":
+          description: Rolled back (or already rolled back)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RollbackResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /v1/identity/{id}:
+    get:
+      tags: [payment]
+      operationId: getIdentity
+      summary: On-chain identity lookup plus this facilitator's account view
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: VerusID friendly name (`name@`) or i-address
+      responses:
+        "200":
+          description: Identity found on chain
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentityResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /.well-known/v402:
+    get:
+      tags: [public]
+      operationId: discovery
+      summary: Discovery document — versions, schemes, topup pointers
+      description: >-
+        Unauthenticated; HTTPS REQUIRED in production. Clients SHOULD pin
+        `payTo`. `canonicalDomain` + `network` let clients build the signed
+        balance query without out-of-band configuration.
+      responses:
+        "200":
+          description: Discovery document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DiscoveryDocument" }
+
+  /v1/topup-instructions:
+    get:
+      tags: [public]
+      operationId: topupInstructions
+      summary: Human/agent-readable deposit instructions incl. QR code
+      parameters:
+        - name: identity
+          in: query
+          required: true
+          schema: { type: string }
+          description: VerusID friendly name the deposit should credit
+        - name: amount
+          in: query
+          required: false
+          schema: { type: string }
+          description: Optional human amount to embed in text/URI/QR
+      responses:
+        "200":
+          description: Topup instructions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TopupInstructions" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /v1/balance:
+    get:
+      tags: [public]
+      operationId: balance
+      summary: Signature-authenticated balance query
+      description: >-
+        Authenticates via a VerusID signature over the domain-separated
+        `v402-balance-query/0.1` canonical payload (see canonical-payload.md).
+        Ownership is evaluated against the LATEST identity state
+        (checklatest) — rotated/revoked keys are rejected. Replay-protected
+        like payments (repeat → 409 with `previousStatus`).
+      parameters:
+        - name: X-V402-Payer
+          in: header
+          required: true
+          schema: { type: string }
+        - name: X-V402-Request-Id
+          in: header
+          required: true
+          schema: { type: string }
+          description: Fresh ULID per query
+        - name: X-V402-Issued-At
+          in: header
+          required: true
+          schema: { type: string }
+          description: Unix seconds, ±300 s acceptance window
+        - name: X-V402-Signature
+          in: header
+          required: true
+          schema: { type: string }
+          description: Base64 signature over the balance-query canonical payload
+      responses:
+        "200":
+          description: Balance state (zeros for identities without an account)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BalanceResponse" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /v1/health:
+    get:
+      tags: [public]
+      operationId: health
+      summary: Liveness/readiness — node reachability and watcher status
+      description: >-
+        200 when healthy, 503 `status: "degraded"` otherwise.
+        `verusRpc.blocks` doubles as the chain-height source for local
+        identity signers. Simulated-watcher deployments do NOT degrade on an
+        unreachable node (they run without one by design).
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+        "503":
+          description: Degraded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /metrics:
+    get:
+      tags: [public]
+      operationId: metrics
+      summary: Prometheus metrics (text exposition format)
+      responses:
+        "200":
+          description: Prometheus text format
+          content:
+            text/plain:
+              schema: { type: string }
+
+  /admin/simulate-deposit:
+    post:
+      tags: [admin]
+      operationId: simulateDeposit
+      summary: Credit a simulated deposit (simulated watcher mode only)
+      description: >-
+        409 `not-simulated` when the watcher runs in real mode. Credits
+        instantly, records `origin: "simulated"`.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SimulateDepositRequest" }
+      responses:
+        "201":
+          description: Deposit credited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminCreditResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /admin/credit:
+    post:
+      tags: [admin]
+      operationId: adminCredit
+      summary: Manual support credit (any mode)
+      description: >-
+        Recorded as simulated origin — excluded from on-chain crosschecks;
+        document the support process before crediting REAL missed deposits
+        this way.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminCreditRequest" }
+      responses:
+        "201":
+          description: Credit booked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminCreditResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /admin/reconcile:
+    post:
+      tags: [admin]
+      operationId: reconcile
+      summary: On-demand ledger-invariant check
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201":
+          description: Reconciliation result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReconcileResponse" }
+        "401": { $ref: "#/components/responses/AuthError" }
+        default: { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: >-
+        username = middleware identifier (free-form, logged), password = the
+        operator-provisioned middleware token. Fail closed: a facilitator
+        with no token configured rejects all payment calls.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Operator admin token; fail closed when unconfigured.
+
+  responses:
+    Error:
+      description: >-
+        Error envelope. `error.code` values are stable identifiers — see
+        facilitator-api.md § Error catalog for the full list and the HTTP
+        status per class (400 request errors, 402 payment, 403 blocked,
+        404 unknown, 409 replay/state, 503 verify-unavailable). Clients MUST
+        tolerate unknown codes.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    AuthError:
+      description: >-
+        Authentication failure (missing/invalid Basic or Bearer credentials).
+        NOTE — reference-implementation reality: auth failures use the
+        framework's default error shape, NOT the v402 error envelope. Clients
+        should treat any 401 as "fix credentials" without parsing the body.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/FrameworkError" }
+
+  schemas:
+    SatsString:
+      type: string
+      pattern: "^-?[0-9]+$"
+      description: >-
+        Exact satoshi amount as a decimal string (never a JSON number).
+        Negative only where explicitly allowed (late-commit balanceAfterSats).
+
+    HumanAmount:
+      type: string
+      pattern: "^[0-9]+(\\.[0-9]+)?$"
+      description: Human decimal amount in minimal form ("0.001", never padded)
+
+    UnixSeconds:
+      type: integer
+      minimum: 0
+
+    FrameworkError:
+      type: object
+      required: [statusCode, message]
+      properties:
+        statusCode: { type: integer }
+        message: { type: string }
+        error: { type: string }
+      additionalProperties: true
+
+    ErrorEnvelope:
+      type: object
+      required: [ok, error]
+      properties:
+        ok: { const: false }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Stable identifier from the error catalog (open set)
+            message: { type: string }
+            details:
+              type: object
+              description: >-
+                Code-specific extras, e.g. `previousStatus` (replay),
+                `balanceSats`/`requiredSats`/`depositAddress`
+                (insufficient-balance), `retryAfterSec` (verify-unavailable),
+                current `accepts` (price-mismatch).
+      additionalProperties: true
+
+    PaymentRequest:
+      type: object
+      required: [method, path, headers, policy]
+      properties:
+        method:
+          type: string
+          description: HTTP method of the guarded request, uppercase
+        path:
+          type: string
+          description: Request-target VERBATIM as received (M1), incl. query string
+        headers:
+          type: object
+          description: >-
+            The client's headers — at minimum all `x-v402-*`, keys lowercased.
+            The scheme is dispatched from `x-v402-scheme`.
+          additionalProperties: { type: string }
+        rawBodyBase64:
+          type: string
+          description: >-
+            Raw request body; required to enforce bodyHashPolicy
+            required/optional. Omit for bodiless requests.
+        policy:
+          type: object
+          required: [priceHuman]
+          properties:
+            priceHuman:
+              $ref: "#/components/schemas/HumanAmount"
+              description: >-
+                The route's current price — compared byte-wise against
+                X-V402-Amount (M6) and embedded verbatim into the rebuilt
+                canonical payload.
+            bodyHashPolicy:
+              type: string
+              enum: [required, optional, ignored]
+              default: ignored
+      additionalProperties: true
+
+    VerifyResponse:
+      type: object
+      required: [ok, requestId, payer, amountSats]
+      properties:
+        ok: { const: true }
+        requestId: { type: string }
+        payer:
+          type: string
+          description: >-
+            NORMALIZED identity key (lowercased chain-relative friendly
+            name) — the balance account, not necessarily the signed casing.
+        amountSats: { $ref: "#/components/schemas/SatsString" }
+      additionalProperties: true
+
+    ReserveResponse:
+      type: object
+      required: [ok, requestId, payer, amountSats, balanceAfterSats]
+      properties:
+        ok: { const: true }
+        requestId: { type: string }
+        payer: { type: string }
+        amountSats: { $ref: "#/components/schemas/SatsString" }
+        balanceAfterSats: { $ref: "#/components/schemas/SatsString" }
+      additionalProperties: true
+
+    CommitRequest:
+      type: object
+      required: [requestId]
+      properties:
+        requestId: { type: string }
+        responseBytes:
+          type: integer
+          minimum: 0
+          default: 0
+        scheme:
+          type: string
+          description: Defaults to the facilitator's default scheme
+
+    CommitResponse:
+      type: object
+      required: [ok, alreadyCommitted, late]
+      properties:
+        ok: { const: true }
+        alreadyCommitted: { type: boolean }
+        late:
+          type: boolean
+          description: True when the reaper had already refunded (B3 re-debit)
+        balanceAfterSats:
+          $ref: "#/components/schemas/SatsString"
+          description: Present on late commits; MAY be negative
+      additionalProperties: true
+
+    RollbackRequest:
+      type: object
+      required: [requestId]
+      properties:
+        requestId: { type: string }
+        scheme: { type: string }
+
+    RollbackResponse:
+      type: object
+      required: [ok, alreadyRolledBack]
+      properties:
+        ok: { const: true }
+        alreadyRolledBack: { type: boolean }
+      additionalProperties: true
+
+    IdentityResponse:
+      type: object
+      required: [ok, identity, status, blockheight, fullyqualifiedname, account]
+      properties:
+        ok: { const: true }
+        identity:
+          type: object
+          description: The daemon's getidentity `.identity` object, passed through
+          required: [name, identityaddress, primaryaddresses, minimumsignatures]
+          properties:
+            name: { type: string }
+            identityaddress: { type: string }
+            primaryaddresses:
+              type: array
+              items: { type: string }
+            minimumsignatures: { type: integer }
+          additionalProperties: true
+        status:
+          type: string
+          description: active | revoked (daemon passthrough, open set)
+        blockheight: { type: integer }
+        fullyqualifiedname: { type: string }
+        account:
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [identityId, balanceSats, createdAt]
+              properties:
+                identityId: { type: string }
+                balanceSats: { $ref: "#/components/schemas/SatsString" }
+                createdAt: { $ref: "#/components/schemas/UnixSeconds" }
+                firstDepositAt: { $ref: "#/components/schemas/UnixSeconds" }
+                lastRequestAt: { $ref: "#/components/schemas/UnixSeconds" }
+              additionalProperties: true
+          description: This facilitator's account view; null without an account
+      additionalProperties: true
+
+    DiscoveryDocument:
+      type: object
+      required:
+        [canonicalDomain, network, supportedVersions, defaultVersion, defaultScheme, schemes, topup]
+      properties:
+        specUrl: { type: string }
+        canonicalDomain: { type: string }
+        network: { type: string }
+        supportedVersions:
+          type: array
+          items: { type: string }
+        defaultVersion: { type: string }
+        deprecatedVersions:
+          type: array
+          items: { type: string }
+        sunsetDates: { type: object, additionalProperties: { type: string } }
+        supportedExtensions:
+          type: array
+          items: { type: string }
+        defaultScheme: { type: string }
+        schemes:
+          type: array
+          items:
+            type: object
+            required: [scheme, schemeVersion, network, asset, payTo]
+            properties:
+              scheme: { type: string }
+              schemeVersion: { type: string }
+              network: { type: string }
+              asset: { type: string }
+              payTo: { type: string }
+            additionalProperties: true
+        topup:
+          type: object
+          required: [depositAddress, attribution, instructionsEndpoint]
+          properties:
+            depositAddress: { type: string }
+            attribution: { type: string }
+            instructionsEndpoint: { type: string }
+          additionalProperties: true
+      additionalProperties: true
+
+    TopupInstructions:
+      type: object
+      required: [instructions, network, asset, expectedConfirmations, pollBalanceEndpoint]
+      properties:
+        instructions:
+          type: object
+          required: [text, paymentUri, qrCode]
+          properties:
+            text: { type: string }
+            paymentUri: { type: string }
+            qrCode:
+              type: string
+              description: "data:image/png;base64,… QR of the payment URI"
+          additionalProperties: true
+        network: { type: string }
+        asset: { type: string }
+        expectedConfirmations: { type: integer }
+        estimatedTimeMinutes: { type: integer }
+        pollBalanceEndpoint: { type: string }
+      additionalProperties: true
+
+    BalanceResponse:
+      type: object
+      required:
+        [identity, balance, reserved, available, balanceSats, reservedSats, availableSats]
+      properties:
+        identity:
+          type: string
+          description: Normalized identity key
+        balance: { $ref: "#/components/schemas/HumanAmount" }
+        reserved: { $ref: "#/components/schemas/HumanAmount" }
+        available: { $ref: "#/components/schemas/HumanAmount" }
+        balanceSats: { $ref: "#/components/schemas/SatsString" }
+        reservedSats: { $ref: "#/components/schemas/SatsString" }
+        availableSats: { $ref: "#/components/schemas/SatsString" }
+        firstDepositAt: { $ref: "#/components/schemas/UnixSeconds" }
+        lastRequestAt: { $ref: "#/components/schemas/UnixSeconds" }
+      additionalProperties: true
+
+    HealthResponse:
+      type: object
+      required: [status, verusRpc, watcher]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        verusRpc:
+          type: object
+          required: [reachable]
+          properties:
+            reachable: { type: boolean }
+            chain: { type: string }
+            blocks:
+              type: integer
+              description: Chain height — height source for local identity signers
+          additionalProperties: true
+        watcher:
+          type: object
+          required: [mode, running]
+          properties:
+            mode: { type: string, enum: [real, simulated] }
+            running: { type: boolean }
+            lastPollAt: { $ref: "#/components/schemas/UnixSeconds" }
+            lagBlocks: { type: integer }
+            lastError: { type: string }
+          additionalProperties: true
+      additionalProperties: true
+
+    SimulateDepositRequest:
+      type: object
+      required: [identity, amount]
+      properties:
+        identity: { type: string }
+        amount: { $ref: "#/components/schemas/HumanAmount" }
+        txid: { type: string }
+
+    AdminCreditRequest:
+      type: object
+      required: [identity, amount]
+      properties:
+        identity: { type: string }
+        amount: { $ref: "#/components/schemas/HumanAmount" }
+        txid: { type: string }
+        note: { type: string }
+
+    AdminCreditResponse:
+      type: object
+      required: [ok, deposit, identity, balanceAfterSats]
+      properties:
+        ok: { const: true }
+        deposit:
+          type: object
+          required: [id, txid, origin]
+          properties:
+            id: { type: integer }
+            txid: { type: string }
+            origin: { type: string, enum: [real, simulated] }
+          additionalProperties: true
+        identity:
+          type: string
+          description: Normalized identity key the credit was booked to
+        balanceAfterSats: { $ref: "#/components/schemas/SatsString" }
+      additionalProperties: true
+
+    ReconcileResponse:
+      type: object
+      required: [ok, runAt, identitiesChecked, mismatches, detail, onChain, durationMs]
+      properties:
+        ok: { const: true }
+        runAt: { $ref: "#/components/schemas/UnixSeconds" }
+        identitiesChecked: { type: integer }
+        mismatches: { type: integer }
+        detail:
+          type: array
+          items: { type: object, additionalProperties: true }
+        onChain:
+          oneOf:
+            - type: object
+              required: [available]
+              properties:
+                available: { const: false }
+              additionalProperties: false
+            - type: object
+              required: [available, creditedDepositSats, chainBalanceSats]
+              properties:
+                available: { const: true }
+                creditedDepositSats: { $ref: "#/components/schemas/SatsString" }
+                chainBalanceSats: { $ref: "#/components/schemas/SatsString" }
+              additionalProperties: false
+          description: Advisory on-chain crosscheck — NOT counted as a mismatch
+        durationMs: { type: integer }
+      additionalProperties: true
