@@ -76,6 +76,12 @@ Undecorated routes are untouched. The price string is advertised verbatim in
 402 responses and compared **byte-wise** against `X-V402-Amount` (M6) — never
 reformat it (`"0.001"` ≠ `"0.0010"`).
 
+The module also serves `GET /.well-known/v402` automatically: the discovery
+document (versions, schemes, topup) plus an `endpoints` rate card derived
+from your `@V402Payment` decorators — a single source of truth, no
+hand-maintained price list. Pass `discovery: false` to `forRoot()` if your
+app serves its own document.
+
 ## 5. Two-phase semantics your handlers get for free
 
 - Handler returns 2xx → the payment **commits**; the response carries

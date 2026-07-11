@@ -63,6 +63,12 @@ First request without payment → 402 with `accepts` → the client signs and
 resends transparently. Fully parallel-safe (`Promise.all` with hundreds of
 requests is fine — each rolls its own ULID).
 
+Repeat calls to the same endpoint skip the 402 preflight — the challenge is
+cached per `METHOD origin/path` (TTL 5 min). Staleness is self-healing: any
+402 on a cached attempt (price or payTo changed) re-signs from that
+response's fresh `accepts`, so the worst case is one extra roundtrip and the
+debit is always the CURRENT advertised price. `acceptsCache: false` opts out.
+
 **Credits are non-refundable** (plan Q8) — top up in amounts you intend to
 spend. Failed requests (5xx) are automatically refunded to your balance;
 definitive answers (2xx and 4xx) are charged.
