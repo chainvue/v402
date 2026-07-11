@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "rules": [
+    { "match": "/health", "free": true },
+    { "match": "/api", "method": "POST", "price": "0.002", "bodyHash": "required" },
+    { "match": "/*", "price": "0.0001" }
+  ]
+}

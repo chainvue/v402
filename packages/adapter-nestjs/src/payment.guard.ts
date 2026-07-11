@@ -7,8 +7,7 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { parseSchemeHeader, type IncomingPaymentRequest, type VerifierRegistry } from "@chainvue/v402-verifier";
-import { build402Body } from "./accepts.js";
+import { build402Body, parseSchemeHeader, type IncomingPaymentRequest, type VerifierRegistry } from "@chainvue/v402-verifier";
 import { V402_PAYMENT_METADATA } from "./payment.decorator.js";
 import {
   V402_CONTEXT,

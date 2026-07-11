@@ -280,6 +280,49 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
+  packages/proxy:
+    dependencies:
+      '@chainvue/v402-protocol':
+        specifier: workspace:^
+        version: link:../protocol
+      '@chainvue/v402-verifier':
+        specifier: workspace:^
+        version: link:../verifier
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@chainvue/v402-client-fetch':
+        specifier: workspace:^
+        version: link:../client-fetch
+      '@chainvue/v402-facilitator':
+        specifier: workspace:^
+        version: link:../facilitator
+      '@chainvue/v402-signer-verus':
+        specifier: workspace:^
+        version: link:../signer-verus
+      '@chainvue/v402-storage':
+        specifier: workspace:^
+        version: link:../storage
+      '@chainvue/v402-verus-rpc':
+        specifier: workspace:^
+        version: link:../verus-rpc
+      '@nestjs/common':
+        specifier: ^11.1.28
+        version: 11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^11.1.28
+        version: 11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/testing':
+        specifier: ^11.1.28
+        version: 11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(@nestjs/platform-express@11.1.28)
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+
   packages/signer-verus:
     dependencies:
       '@chainvue/v402-verus-rpc':

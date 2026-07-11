@@ -7,7 +7,7 @@ import type {
   VerifyAndReserveResult,
   VerifyError,
   VerifyResult,
-} from "@chainvue/v402-verifier";
+} from "./types.js";
 
 export interface HttpFacilitatorVerifierOptions {
   scheme: string;

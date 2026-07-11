@@ -1,4 +1,6 @@
 export { VerifierRegistry, parseSchemeHeader } from "./registry.js";
+export { HttpFacilitatorVerifier, type HttpFacilitatorVerifierOptions } from "./http-facilitator-verifier.js";
+export { build402Body, type PaymentAdvertisement } from "./accepts.js";
 export {
   CachedIdentityProvider,
   type CachedIdentityProviderOptions,

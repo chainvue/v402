@@ -1,6 +1,20 @@
 import { PROTOCOL_VERSION, REQUIRED_PAYMENT_HEADERS } from "@chainvue/v402-protocol";
-import type { VerifierRegistry, VerifyError } from "@chainvue/v402-verifier";
-import type { PaymentAdvertisement, RoutePaymentMetadata } from "./types.js";
+import type { VerifierRegistry } from "./registry.js";
+import type { RoutePolicy, VerifyError } from "./types.js";
+
+/** Fields advertised in 402 responses (the `accepts` entry, minus per-route price). */
+export interface PaymentAdvertisement {
+  /** Domain signatures are bound to — MUST match what clients see. */
+  canonicalDomain: string;
+  /** e.g. "vrsctest" (M3). */
+  network: string;
+  /** e.g. "VRSCTEST". */
+  asset: string;
+  /** Receiving identity (also the deposit address). */
+  payTo: string;
+  /** Facilitator base URL advertised to clients (topup/balance endpoints). */
+  facilitatorUrl: string;
+}
 
 /**
  * Body of a 402 Payment Required response (spec § 402 response): the
@@ -10,7 +24,7 @@ import type { PaymentAdvertisement, RoutePaymentMetadata } from "./types.js";
 export function build402Body(
   advertisement: PaymentAdvertisement,
   registry: VerifierRegistry,
-  route: RoutePaymentMetadata,
+  route: RoutePolicy,
   error?: VerifyError,
 ): Record<string, unknown> {
   const accepts = registry.supportedSchemes().map((scheme) => ({

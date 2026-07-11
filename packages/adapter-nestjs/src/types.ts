@@ -2,19 +2,9 @@ import type { IStorage } from "@chainvue/v402-storage";
 import type { IVerusRpc, VerusRpcConfig } from "@chainvue/v402-verus-rpc";
 import type { SchemeVerifier } from "@chainvue/v402-verifier";
 
-/** Fields advertised in 402 responses (the `accepts` entry, minus per-route price). */
-export interface PaymentAdvertisement {
-  /** Domain signatures are bound to — MUST match what clients see. */
-  canonicalDomain: string;
-  /** e.g. "vrsctest" (M3). */
-  network: string;
-  /** e.g. "VRSCTEST". */
-  asset: string;
-  /** Receiving identity (also the deposit address). */
-  payTo: string;
-  /** Facilitator base URL advertised to clients (topup/balance endpoints). */
-  facilitatorUrl: string;
-}
+// moved to @chainvue/v402-verifier — re-exported so existing imports keep working
+export type { PaymentAdvertisement } from "@chainvue/v402-verifier";
+import type { PaymentAdvertisement } from "@chainvue/v402-verifier";
 
 /** Options shared by both adapter modes beyond the advertisement fields. */
 export interface V402SharedOptions {

@@ -12,6 +12,9 @@
 - [Building a v402 implementation (any language)](./implementers.md) — map of
   the normative sources, the crypto pitfalls, test vectors, and the
   `v402-conformance` CLI as acceptance gate
+- [Reverse proxy: protect any origin without touching it](../../packages/proxy/README.md)
+  — standalone payment guard in front of static sites/WordPress/any API;
+  rules file, compose example (`docker-compose.proxy.yml`), TLS notes
 
 Protocol-level reference: [`spec/`](../../spec/) (normative), including the
 [facilitator HTTP API](../../spec/0.1/facilitator-api.md) — machine-readable
