@@ -157,7 +157,12 @@ export function buildConfig(env: NodeJS.ProcessEnv, overrides: Record<string, un
       ...(env["V402_CHAIN"] !== undefined ? { chain: env["V402_CHAIN"] } : {}),
       circuit: {},
     },
-    verifier: {},
+    verifier: {
+      ...(env["V402_VERIFIER_MODE"] !== undefined ? { mode: env["V402_VERIFIER_MODE"] } : {}),
+      ...(env["V402_IDENTITY_CACHE_TTL_SEC"] !== undefined
+        ? { identityCacheTtlSec: Number(env["V402_IDENTITY_CACHE_TTL_SEC"]) }
+        : {}),
+    },
     schemes: [
       {
         name: SCHEME_VERUS_PREPAID_SIG,

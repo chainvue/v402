@@ -290,6 +290,9 @@ importers:
       '@chainvue/v402-protocol':
         specifier: workspace:^
         version: link:../protocol
+      '@chainvue/v402-signer-verus':
+        specifier: workspace:^
+        version: link:../signer-verus
       '@chainvue/v402-storage':
         specifier: workspace:^
         version: link:../storage

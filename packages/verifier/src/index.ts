@@ -1,5 +1,11 @@
 export { VerifierRegistry, parseSchemeHeader } from "./registry.js";
 export {
+  CachedIdentityProvider,
+  type CachedIdentityProviderOptions,
+  type IdentityStateProvider,
+  type ResolvedIdentityState,
+} from "./identity-provider.js";
+export {
   VerusPrepaidSigVerifier,
   type PrepaidSigVerifierConfig,
   type PrepaidSigVerifierDeps,

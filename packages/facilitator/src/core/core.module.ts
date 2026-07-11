@@ -9,7 +9,7 @@ import { RealDepositWatcher, SimulatedDepositWatcher, type IWatcher } from "@cha
 import type { IStorage } from "@chainvue/v402-storage";
 import { SqliteStorage } from "@chainvue/v402-storage-sqlite";
 import { VerusRpcClient, type IVerusRpc } from "@chainvue/v402-verus-rpc";
-import { VerifierRegistry, VerusPrepaidSigVerifier } from "@chainvue/v402-verifier";
+import { CachedIdentityProvider, VerifierRegistry, VerusPrepaidSigVerifier } from "@chainvue/v402-verifier";
 import { SCHEME_VERUS_PREPAID_SIG } from "@chainvue/v402-protocol";
 import { V402_CONFIG } from "../config/config.module.js";
 import type { FacilitatorConfig } from "../config/schema.js";
@@ -85,6 +85,14 @@ export class CoreModule {
                   new VerusPrepaidSigVerifier({
                     storage,
                     rpc,
+                    ...(config.verifier.mode === "offline"
+                      ? {
+                          identityProvider: new CachedIdentityProvider(rpc, {
+                            ttlSec: config.verifier.identityCacheTtlSec,
+                            maxEntries: config.verifier.identityCacheMaxSize,
+                          }),
+                        }
+                      : {}),
                     config: {
                       network: config.verus.chain,
                       asset: scheme.config.asset,
@@ -92,6 +100,8 @@ export class CoreModule {
                       canonicalDomain: config.payment.canonicalDomain,
                       timestampToleranceSec: config.payment.timestampToleranceSec,
                       maxExtensionsBytes: config.payment.maxExtensionsBytes,
+                      verificationMode: config.verifier.mode,
+                      identityCacheTtlSec: config.verifier.identityCacheTtlSec,
                     },
                   }),
                 );

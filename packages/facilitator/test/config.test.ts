@@ -34,6 +34,8 @@ describe("buildConfig", () => {
       V402_PAY_TO: "myAPI@",
       V402_CANONICAL_DOMAIN: "api.example.com",
       V402_WATCHER_MODE: "simulated",
+      V402_VERIFIER_MODE: "offline",
+      V402_IDENTITY_CACHE_TTL_SEC: "120",
       V402_ADMIN_TOKEN: "t0ken",
       LOG_LEVEL: "debug",
       NODE_ENV: "test",
@@ -44,6 +46,7 @@ describe("buildConfig", () => {
     expect(config.schemes[0]?.config.payToIdentity).toBe("myAPI@");
     expect(config.payment.canonicalDomain).toBe("api.example.com");
     expect(config.watcher.mode).toBe("simulated");
+    expect(config.verifier).toMatchObject({ mode: "offline", identityCacheTtlSec: 120 });
     expect(config.ops.adminToken).toBe("t0ken");
     expect(config.logging.level).toBe("debug");
   });
@@ -58,6 +61,8 @@ describe("buildConfig", () => {
   it.each([
     ["invalid port", { PORT: "0" }],
     ["invalid watcher mode", { V402_WATCHER_MODE: "fake" }],
+    ["invalid verifier mode", { V402_VERIFIER_MODE: "cloud" }],
+    ["invalid identity cache ttl", { V402_IDENTITY_CACHE_TTL_SEC: "-1" }],
     ["invalid log level", { LOG_LEVEL: "verbose" }],
   ])("fails boot on %s", (_name, env) => {
     expect(() => buildConfig(env as NodeJS.ProcessEnv)).toThrow();

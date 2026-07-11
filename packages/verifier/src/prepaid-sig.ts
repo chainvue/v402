@@ -14,7 +14,9 @@ import {
   type PaymentClaim,
 } from "@chainvue/v402-protocol";
 import type { IStorage } from "@chainvue/v402-storage";
+import { verifyIdentitySignature } from "@chainvue/v402-signer-verus";
 import { VerusRpcUnavailableError, type IVerusRpc } from "@chainvue/v402-verus-rpc";
+import { CachedIdentityProvider, type IdentityStateProvider } from "./identity-provider.js";
 import { parseSchemeHeader } from "./registry.js";
 import type {
   CommitResult,
@@ -43,12 +45,23 @@ export interface PrepaidSigVerifierConfig {
   maxExtensionsBytes?: number;
   /** Enabled scheme versions. Default ["0.1"]. */
   schemeVersions?: string[];
+  /**
+   * `rpc` (default) verifies each signature via verifymessage
+   * (checklatest=true). `offline` verifies by local pubkey recovery against
+   * cached latest identity state — no RPC per request; revocation/rotation
+   * take effect within the identity cache TTL instead of immediately.
+   */
+  verificationMode?: "rpc" | "offline";
+  /** Offline mode: identity-state cache TTL. Default 60. */
+  identityCacheTtlSec?: number;
 }
 
 export interface PrepaidSigVerifierDeps {
   storage: IStorage;
   rpc: IVerusRpc;
   config: PrepaidSigVerifierConfig;
+  /** Offline mode: identity-state source. Default: CachedIdentityProvider over `rpc`. */
+  identityProvider?: IdentityStateProvider;
   /** Unix-seconds clock, injectable for tests. */
   now?: () => number;
 }
@@ -78,6 +91,7 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
   private readonly storage: IStorage;
   private readonly rpc: IVerusRpc;
   private readonly config: Required<PrepaidSigVerifierConfig>;
+  private readonly identityProvider: IdentityStateProvider | undefined;
   private readonly now: () => number;
 
   constructor(deps: PrepaidSigVerifierDeps) {
@@ -87,9 +101,15 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
       timestampToleranceSec: 300,
       maxExtensionsBytes: MAX_EXTENSIONS_BYTES,
       schemeVersions: [VERUS_PREPAID_SIG_VERSION],
+      verificationMode: "rpc",
+      identityCacheTtlSec: 60,
       ...deps.config,
     };
     this.schemeVersions = this.config.schemeVersions;
+    this.identityProvider =
+      this.config.verificationMode === "offline"
+        ? (deps.identityProvider ?? new CachedIdentityProvider(deps.rpc, { ttlSec: this.config.identityCacheTtlSec }))
+        : undefined;
     this.now = deps.now ?? (() => Math.floor(Date.now() / 1000));
   }
 
@@ -225,12 +245,16 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
 
     let signatureValid: boolean;
     try {
-      // checkLatest=true (decision with D2): identity signatures embed a block
-      // height and verusd resolves the identity's keys AT that height by
-      // default — a compromised-then-rotated key could keep signing with an
-      // old height forever. Verifying against the LATEST identity state makes
-      // revocation and key rotation take effect immediately.
-      signatureValid = await this.rpc.verifyMessage(claim.payer, claim.signature, canonical, true);
+      signatureValid =
+        this.identityProvider !== undefined
+          ? await this.verifySignatureOffline(this.identityProvider, claim.payer, claim.signature, canonical)
+          : // checkLatest=true (decision with D2): identity signatures embed a
+            // block height and verusd resolves the identity's keys AT that
+            // height by default — a compromised-then-rotated key could keep
+            // signing with an old height forever. Verifying against the LATEST
+            // identity state makes revocation and key rotation take effect
+            // immediately.
+            await this.rpc.verifyMessage(claim.payer, claim.signature, canonical, true);
     } catch (err) {
       if (err instanceof VerusRpcUnavailableError) {
         // client MAY retry with the SAME requestId (M5) — nothing reserved yet
@@ -244,6 +268,26 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
     if (!signatureValid) return fail(402, "invalid-signature", "signature verification failed");
 
     return { ok: true, claim, identityKey, receivedAt: nowSec };
+  }
+
+  /**
+   * Offline verification: pubkey recovery against cached latest identity
+   * state. On failure, refresh the state once and re-verify — a key rotation
+   * inside the cache TTL would otherwise reject freshly re-signed requests.
+   * The provider rate-limits refreshes, so invalid-signature spam cannot be
+   * turned into per-request RPC load.
+   */
+  private async verifySignatureOffline(
+    provider: IdentityStateProvider,
+    payer: string,
+    signature: string,
+    canonical: string,
+  ): Promise<boolean> {
+    const state = await provider.getIdentityState(payer);
+    if (verifyIdentitySignature(canonical, signature, state.systemId, state).valid) return true;
+    const fresh = await provider.refreshIdentityState(payer);
+    if (fresh === state) return false; // refresh was rate-limited — same state, same verdict
+    return verifyIdentitySignature(canonical, signature, fresh.systemId, fresh).valid;
   }
 
   private decodeExtensions(
