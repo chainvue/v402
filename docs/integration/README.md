@@ -9,7 +9,11 @@
   identity-mode signing without a node, client retry behavior
 - [Discovery + topup UX for new customers](./discovery-topup.md) — zero to
   paid requests: discover, top up, wait for credit, pay
+- [Building a v402 implementation (any language)](./implementers.md) — map of
+  the normative sources, the crypto pitfalls, test vectors, and the
+  `v402-conformance` CLI as acceptance gate
 
 Protocol-level reference: [`spec/`](../../spec/) (normative), including the
-[facilitator HTTP API](../../spec/0.1/facilitator-api.md) for non-JS
+[facilitator HTTP API](../../spec/0.1/facilitator-api.md) — machine-readable
+as [OpenAPI 3.1](../../spec/0.1/facilitator-api.openapi.yaml) — for non-JS
 implementations.

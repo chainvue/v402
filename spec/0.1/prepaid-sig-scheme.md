@@ -76,11 +76,17 @@ each) of the chain's and the identity's i-addresses. The wire form is the
 `CIdentitySignature` envelope, Base64 of:
 
 ```
-0x01 || blockHeight(uint32 LE) || 0x01 || 0x41 || compact65
+0x01 || blockHeight(uint32 LE) || compactSize(numSigs) || ( 0x41 || compact65 )*
 ```
 
-(version 1, one signature, 65-byte entry; multisig identities carry more
-entries and MUST satisfy the identity's `minimumsignatures`).
+(version 1, then one 65-byte recoverable compact signature per signing key —
+`0x01 || blockHeight || 0x01 || 0x41 || compact65` in the common 1-of-1
+case). Every compact signature signs the SAME `idDigest`. For N-of-M
+multisig identities, verifiers recover a public key per entry and count
+**distinct** matching primary addresses against `minimumsignatures` —
+signature order is irrelevant, duplicate keys add no weight, and
+non-primary keys never count. Exercised live against the VRSCTEST 2-of-2
+fixture `v402multisig@`.
 
 Normative notes, established empirically against `verusd` v1.2.17 and
 cross-checked against the VerusCoin sources:
