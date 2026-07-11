@@ -1,0 +1,101 @@
+# Release — publish workspace packages to npm via OIDC trusted publishing.
+#
+# Trigger model: MANUAL (workflow_dispatch), main only. In this monorepo the
+# packages are versioned independently and `pnpm -r publish` derives the
+# release set from "workspace version not on the registry yet" — the release
+# event is the version-bump commit on main, not a tag. A tag would have to
+# encode which of the 12 packages it covers; manual dispatch after the bump
+# commit is explicit and cannot fire by accident. Revisit (changesets +
+# push-trigger) if release cadence ever outgrows one-person dispatch.
+#
+# Auth: npm trusted publishing (OIDC) — no npm tokens anywhere. Requires the
+# one-time trusted-publisher registration on npmjs.com per package (repo
+# chainvue/v402 + workflow filename `release.yml`). `id-token: write` lets
+# pnpm (>=10.9 — native OIDC support) exchange the Actions OIDC token for a
+# short-lived publish token; provenance is generated automatically for
+# trusted publishes from public repos (NPM_CONFIG_PROVENANCE is explicit
+# belt-and-suspenders).
+#
+# Deliberately NO `registry-url` on setup-node: it writes an .npmrc line
+# `_authToken=${NODE_AUTH_TOKEN}` which breaks when the env var is unset —
+# and with OIDC there is no token. pnpm publishes to registry.npmjs.org by
+# default.
+#
+# Process rule (docs/RISKS.md, Etappe 1.5): after every publish, a
+# from-registry install smoke — the `smoke` job installs every published
+# package at its workspace version from the PUBLIC registry into a fresh
+# project and imports it. Catches stale-dependency publishes (the
+# conformance-suite@0.1.0 / signer-verus@0.1.0 incident) that workspace
+# resolution masks locally.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: build, test and pack, but do not publish"
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # OIDC token for npm trusted publishing
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      # Publishes every non-private workspace package whose version is not on
+      # the registry yet, in dependency (topological) order. --no-git-checks:
+      # Actions checks out a detached HEAD, which pnpm's branch check rejects.
+      - name: Publish
+        run: >-
+          pnpm -r publish --no-git-checks
+          ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          NPM_CONFIG_PROVENANCE: "true"
+
+  smoke:
+    needs: release
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+
+      - name: From-registry install smoke
+        run: node scripts/registry-install-smoke.mjs

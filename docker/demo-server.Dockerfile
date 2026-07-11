@@ -5,7 +5,7 @@ FROM node:26-slim AS build
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
-RUN npm install -g pnpm@9.15.0
+RUN npm install -g pnpm@10.34.5
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages ./packages

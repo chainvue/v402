@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-facilitator",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Standalone v402 facilitator daemon: verify/reserve/commit/rollback API, balance state, deposit watching, discovery — NestJS, Pino JSON logs, Prometheus metrics, Zod-validated config.",
   "repository": {
     "type": "git",
@@ -12,7 +12,13 @@
   "license": "Apache-2.0",
   "author": "Robert Lech (chainvue)",
   "type": "module",
-  "main": "./dist/main.js",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
