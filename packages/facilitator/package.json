@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-facilitator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Standalone v402 facilitator daemon: verify/reserve/commit/rollback API, balance state, deposit watching, discovery — NestJS, Pino JSON logs, Prometheus metrics, Zod-validated config.",
   "repository": {
     "type": "git",

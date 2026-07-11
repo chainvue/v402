@@ -69,7 +69,11 @@ export class BalanceController {
     });
     let valid: boolean;
     try {
-      valid = await this.rpc.verifyMessage(payer, signature, canonical);
+      // checkLatest=true — ownership must be evaluated against the CURRENT
+      // identity state, same as the payment path: a rotated-out or revoked
+      // primary key must not keep reading balances via an old embedded height
+      // (security-review finding 2026-07-11, docs/RISKS.md Layer 4).
+      valid = await this.rpc.verifyMessage(payer, signature, canonical, true);
     } catch (err) {
       if (err instanceof VerusRpcUnavailableError) {
         reject(503, "verify-unavailable", "signature verification temporarily unavailable");

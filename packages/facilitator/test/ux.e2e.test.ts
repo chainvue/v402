@@ -20,6 +20,7 @@ describe("facilitator UX endpoints (e2e)", () => {
   let app: INestApplication;
   let storage: IStorage;
   const capturedCanonicals: string[] = [];
+  const capturedCheckLatest: Array<boolean | undefined> = [];
 
   beforeAll(async () => {
     const config = buildConfig(
@@ -32,8 +33,9 @@ describe("facilitator UX endpoints (e2e)", () => {
       },
     );
     const rpc = new MockVerusRpc({
-      verifyMessage: async (_signer, _sig, message) => {
+      verifyMessage: async (_signer, _sig, message, checkLatest) => {
         capturedCanonicals.push(message);
+        capturedCheckLatest.push(checkLatest);
         return true;
       },
       getInfo: async () => ({ VRSCversion: "1.2.17", version: 1, name: "VRSCTEST", blocks: 1_140_000, chainid: "x" }),
@@ -157,6 +159,10 @@ describe("facilitator UX endpoints (e2e)", () => {
           issuedAt: ISSUED_AT,
         }),
       );
+      // ownership must be checked against the LATEST identity state — a
+      // rotated-out/revoked key must not keep reading balances via an old
+      // embedded height (security-review finding 2026-07-11)
+      expect(capturedCheckLatest.at(-1)).toBe(true);
     });
 
     it("replays are rejected with 409 and the previous status", async () => {
