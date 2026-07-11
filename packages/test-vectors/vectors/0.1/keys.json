@@ -20,6 +20,7 @@
     {
       "name": "v402test@",
       "identityaddress": "iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma",
+      "systemid": "iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq",
       "primaryaddress": "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT",
       "note": "Dedicated VRSCTEST identity for identity-signature cases; primary address is the published test key A, so ANY implementer can sign as v402test@ and regenerate these cases. VerusID signatures embed the signing block height, so these cases assert verify-validity, not byte-equality. Revocation/recovery authorities are steward-controlled (v402revoke@ / v402recover@). Never fund this identity."
     }

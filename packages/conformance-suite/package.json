@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-conformance-suite",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Conformance runner for v402 implementations: drives any implementation through the normative reference test vectors (canonical form, extensions, boundaries, wire format, signing, verification) via a pluggable target interface and reports pass/fail per case.",
   "repository": {
     "type": "git",

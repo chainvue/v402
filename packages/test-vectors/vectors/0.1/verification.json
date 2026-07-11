@@ -22,7 +22,7 @@
       "spec": "verus-prepaid-sig-v0.1",
       "input": {
         "signer": "v402test@",
-        "signature": "AQdqEQABQR8tnBkzZEYhSgBuSWPiqSOnBP8jQDjXOcFZBG9X1JKsLRIqZPc/NX6gpHxj4ZWmIdsECCbtCNeQHBLggYFdXhsi",
+        "signature": "AY9rEQABQR91t8AZ2mtKbAevTHrYPeDvJjUinWdzP1NZYqxxKJnqO0nQsHkgtS/LpIMCEW7DVlbnsEzlrgHNXM37f9q1Jt7k",
         "message": "verus-prepaid-sig/0.1\ncanonicalDomain: explorer.example.com\nmethod: GET\npath: /api/tx/abc\nscheme: verus-prepaid-sig\nnetwork: vrsctest\nasset: VRSCTEST\namount: 0.001\npayer: v402test.demoAgent@\npayTo: explorerAPI@\nrequestId: 01H8XG7Q4M2N8P5R7T3V9WXYZA\nissuedAt: 1783650000"
       },
       "expected": {

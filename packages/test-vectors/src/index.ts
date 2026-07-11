@@ -40,7 +40,16 @@ export interface TestKeys {
   derivation: string;
   network: string;
   keys: Array<{ id: string; seed: string; wif: string; address: string }>;
-  identities: Array<{ name: string; note: string }>;
+  identities: Array<{
+    name: string;
+    /** Identity i-address (getidentity .identity.identityaddress). */
+    identityaddress?: string;
+    /** Chain i-address the identity lives on — the identity digest binds it. */
+    systemid?: string;
+    /** Single published primary address (key A) — 1-of-1 identity state. */
+    primaryaddress?: string;
+    note: string;
+  }>;
 }
 
 /** Absolute path of a vector file — for consumers that want the raw JSON. */

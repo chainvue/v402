@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-test-vectors",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Normative reference test vectors for the v402 payment protocol (verus-prepaid-sig/0.1). JSON fixtures for conformance-testing v402 implementations in any language.",
   "repository": {
     "type": "git",

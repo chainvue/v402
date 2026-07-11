@@ -17,8 +17,9 @@ import type {
 
 /**
  * Chain i-addresses by network name — the identity digest binds the chain,
- * so identity-signature cases need it. Only networks that appear in the
- * published vectors are pinned.
+ * so identity-signature cases need it. Fallback only: since the systemid
+ * field landed in keys.json (2026-07-11) the vectors carry their own chain
+ * id; this map covers vector sets from before that.
  */
 const SYSTEM_IDS: Record<string, string> = {
   vrsctest: "iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq",
@@ -83,10 +84,8 @@ export function formatReport(report: ConformanceReport): string {
 
 function pinnedIdentity(specVersion: string): PinnedIdentity | undefined {
   const keys = loadTestKeys(specVersion);
-  const entry = keys.identities[0] as
-    | { name: string; identityaddress?: string; primaryaddress?: string }
-    | undefined;
-  const systemId = SYSTEM_IDS[keys.network];
+  const entry = keys.identities[0];
+  const systemId = entry?.systemid ?? SYSTEM_IDS[keys.network];
   if (entry?.identityaddress === undefined || entry.primaryaddress === undefined || systemId === undefined) {
     return undefined;
   }
