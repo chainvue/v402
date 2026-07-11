@@ -11,4 +11,12 @@ export {
 } from "./local-signer.js";
 export { verusIdentitySignDigest, verusMessageHash, verusSignDigest } from "./message-hash.js";
 export { signAddressMessage, signIdentityMessage, wrapIdentitySignature, type IdentitySignOptions } from "./sign.js";
-export { decodeIAddress, decodeWif } from "./wif.js";
+export { decodeIAddress, decodeRAddress, decodeWif } from "./wif.js";
+export {
+  verifyAddressSignature,
+  verifyIdentitySignature,
+  parseIdentitySignature,
+  type IdentityState,
+  type IdentityVerification,
+  type ParsedIdentitySignature,
+} from "./verify.js";

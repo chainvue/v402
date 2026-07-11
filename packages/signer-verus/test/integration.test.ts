@@ -5,7 +5,13 @@
  */
 import { describe, expect, it } from "vitest";
 import { VerusRpcClient } from "@chainvue/v402-verus-rpc";
-import { EnvSigner, LocalKeySigner } from "../src/index.js";
+import {
+  EnvSigner,
+  LocalKeySigner,
+  verifyAddressSignature,
+  verifyIdentitySignature,
+  type IdentityState,
+} from "../src/index.js";
 
 const RPC_URL = process.env["VERUS_RPC_URL"];
 
@@ -64,5 +70,31 @@ describe.skipIf(!RPC_URL)("signer-verus integration (VRSCTEST)", () => {
     });
     const signature = await signer.signMessage("original");
     expect(await rpc.verifyMessage(V402TEST.name, signature, "tampered")).toBe(false);
+  });
+
+  // Offline-verifier parity (Etappe 1.5): DAEMON-built signatures must pass
+  // the local recovery-based verification — the reverse direction of the
+  // signing tests above.
+  it("a daemon address signature verifies offline", async () => {
+    const message = "v402 offline parity probe (address)";
+    const { signature } = await rpc.signMessage(KEY_A.address, message);
+    expect(verifyAddressSignature(message, signature, KEY_A.address)).toBe(true);
+    expect(verifyAddressSignature(message + "x", signature, KEY_A.address)).toBe(false);
+    expect(verifyAddressSignature(message, signature, KEY_B.address)).toBe(false);
+  });
+
+  it("a daemon identity signature verifies offline against live getidentity state", async () => {
+    const message = "v402 offline parity probe (identity)";
+    const { signature } = await rpc.signMessage(V402TEST.name, message);
+    const live = await rpc.getIdentity(V402TEST.name);
+    const state: IdentityState = {
+      identityAddress: live.identity.identityaddress,
+      primaryAddresses: live.identity.primaryaddresses,
+      minimumSignatures: live.identity.minimumsignatures,
+      revoked: live.status === "revoked",
+    };
+    const result = verifyIdentitySignature(message, signature, live.identity.systemid, state);
+    expect(result.valid).toBe(true);
+    expect(verifyIdentitySignature("tampered", signature, live.identity.systemid, state).valid).toBe(false);
   });
 });

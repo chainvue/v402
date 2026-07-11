@@ -49,6 +49,29 @@ export function decodeIAddress(address: string): Uint8Array {
   return Uint8Array.from(payload.subarray(1));
 }
 
+/** Verus/Komodo transparent address (R-address) base58check version byte. */
+const RADDRESS_PREFIX = 0x3c;
+
+/**
+ * Decode a Verus transparent address (R-address, e.g.
+ * `RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT`) to its raw 20-byte hash160 —
+ * the form compared against recovered public keys during verification.
+ */
+export function decodeRAddress(address: string): Uint8Array {
+  const decoded = base58Decode(address);
+  if (decoded.length !== 25) {
+    throw new Error(`invalid R-address: expected 25 bytes (version+hash160+checksum), got ${decoded.length}`);
+  }
+  const payload = decoded.subarray(0, 21);
+  const checksum = decoded.subarray(21);
+  const expected = sha256(sha256(payload)).subarray(0, 4);
+  if (!Buffer.from(checksum).equals(Buffer.from(expected))) throw new Error("invalid R-address: checksum mismatch");
+  if (payload[0] !== RADDRESS_PREFIX) {
+    throw new Error(`invalid R-address: expected version 0x${RADDRESS_PREFIX.toString(16)}, got 0x${payload[0]!.toString(16)}`);
+  }
+  return Uint8Array.from(payload.subarray(1));
+}
+
 /**
  * Decode a Verus WIF private key: base58check(0xBC || privkey32 || 0x01).
  * Only compressed keys are supported — everything v402 publishes/uses is
