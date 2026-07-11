@@ -147,6 +147,18 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
 
+  packages/conformance-suite:
+    dependencies:
+      '@chainvue/v402-protocol':
+        specifier: workspace:^
+        version: link:../protocol
+      '@chainvue/v402-signer-verus':
+        specifier: workspace:^
+        version: link:../signer-verus
+      '@chainvue/v402-test-vectors':
+        specifier: workspace:^
+        version: link:../test-vectors
+
   packages/deposit-watcher:
     dependencies:
       '@chainvue/v402-protocol':

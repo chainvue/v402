@@ -1,0 +1,40 @@
+{
+  "name": "@chainvue/v402-conformance-suite",
+  "version": "0.1.0",
+  "description": "Conformance runner for v402 implementations: drives any implementation through the normative reference test vectors (canonical form, extensions, boundaries, wire format, signing, verification) via a pluggable target interface and reports pass/fail per case.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/conformance-suite"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/conformance-suite#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
+  "license": "Apache-2.0",
+  "author": "Robert Lech (chainvue)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@chainvue/v402-protocol": "workspace:^",
+    "@chainvue/v402-signer-verus": "workspace:^",
+    "@chainvue/v402-test-vectors": "workspace:^"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
