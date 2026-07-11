@@ -15,6 +15,9 @@
 - [Reverse proxy: protect any origin without touching it](../../packages/proxy/README.md)
   — standalone payment guard in front of static sites/WordPress/any API;
   rules file, compose example (`docker-compose.proxy.yml`), TLS notes
+- [MCP server: let Claude pay for APIs mid-conversation](../../packages/mcp/README.md)
+  — paid fetch with operator-controlled spending caps, balance/topup/discovery
+  tools, Claude Desktop/Code configuration
 
 Protocol-level reference: [`spec/`](../../spec/) (normative), including the
 [facilitator HTTP API](../../spec/0.1/facilitator-api.md) — machine-readable

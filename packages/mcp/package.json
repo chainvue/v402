@@ -1,0 +1,57 @@
+{
+  "name": "@chainvue/v402-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for v402: gives Claude (or any MCP host) tools to autonomously pay for APIs mid-conversation — paid fetch with spending caps, balance, topup instructions and service discovery over a prepaid VerusID balance.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainvue/v402.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/chainvue/v402/tree/main/packages/mcp#readme",
+  "bugs": "https://github.com/chainvue/v402/issues",
+  "license": "Apache-2.0",
+  "author": "Robert Lech (chainvue)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "v402-mcp": "./dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node --enable-source-maps dist/main.js"
+  },
+  "dependencies": {
+    "@chainvue/v402-client-fetch": "workspace:^",
+    "@chainvue/v402-protocol": "workspace:^",
+    "@chainvue/v402-signer-verus": "workspace:^",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@chainvue/v402-facilitator": "workspace:^",
+    "@chainvue/v402-nestjs": "workspace:^",
+    "@chainvue/v402-storage": "workspace:^",
+    "@chainvue/v402-verus-rpc": "workspace:^",
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/testing": "^11.1.28",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
