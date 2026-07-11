@@ -142,7 +142,8 @@ async function expectErrorCode(run: () => Promise<unknown>, expectedCode: string
     await run();
   } catch (err) {
     const code = (err as { code?: unknown }).code;
-    return code === expectedCode ? undefined : `expected error code ${expectedCode}, got ${String(code ?? (err as Error).message)}`;
+    const got = typeof code === "string" || typeof code === "number" ? String(code) : (err as Error).message;
+    return code === expectedCode ? undefined : `expected error code ${expectedCode}, got ${got}`;
   }
   return `expected error code ${expectedCode}, but the operation succeeded`;
 }

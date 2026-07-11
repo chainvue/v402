@@ -15,6 +15,7 @@ export const humanAmountSchema = z.string().refine(isValidHumanAmount, "must be 
 export const ulidSchema = z.string().refine(isValidUlid, "must be a ULID (26 chars, Crockford base32)");
 export const identitySchema = z
   .string()
+  // eslint-disable-next-line no-control-regex -- rejecting control chars is the wire rule
   .regex(/^[^\s\x00-\x1f\x7f]+@$/, "must be a VerusID friendly name ending in '@'");
 export const unixSecondsSchema = z.number().int().nonnegative();
 

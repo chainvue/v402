@@ -143,10 +143,7 @@ describe("parsePaymentHeaders", () => {
     ["negative issuedAt", { "x-v402-issued-at": "-1" }],
     ["base64url signature", { "x-v402-signature": "AgQ2-_l0eXNpZ25hdHVyZQ==" }],
   ])("fails closed on %s", (_name, overrides) => {
-    const result = parsePaymentHeaders({ ...validHeaders, ...overrides } as Record<
-      string,
-      string | string[] | undefined
-    >);
+    const result = parsePaymentHeaders({ ...validHeaders, ...overrides });
     expect(result.ok).toBe(false);
   });
 });

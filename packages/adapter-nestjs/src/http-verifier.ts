@@ -73,7 +73,7 @@ export class HttpFacilitatorVerifier implements SchemeVerifier {
     const remote = result.body["error"] as Partial<VerifyError> | undefined;
     return {
       httpStatus: result.status,
-      code: (remote?.code ?? "verify-unavailable") as VerifyError["code"],
+      code: remote?.code ?? "verify-unavailable",
       message: remote?.message ?? `facilitator answered ${result.status}`,
       ...(remote?.details !== undefined ? { details: remote.details } : {}),
     };

@@ -15,6 +15,7 @@ const SCHEME_VERSION_RE = /^\d+\.\d+$/;
 const METHOD_RE = /^[A-Z]+$/;
 const NETWORK_RE = /^[a-z0-9]+$/;
 /** Whitespace/control characters would corrupt the line-based canonical form. */
+// eslint-disable-next-line no-control-regex -- rejecting control chars is the wire rule
 const LINE_SAFE_RE = /^[^\s\x00-\x1f\x7f]+$/;
 
 function invalid(field: string, value: unknown, rule: string): never {

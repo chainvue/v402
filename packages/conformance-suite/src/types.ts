@@ -28,21 +28,21 @@ export type WireFormatType = "payment402" | "paymentRequirement" | "discovery" |
 export interface ConformanceTarget {
   name: string;
   /** canonical.json + boundary canonicalize cases. */
-  canonicalize?(payload: Record<string, unknown>, payloadType: "payment" | "balanceQuery"): MaybePromise<string>;
+  canonicalize?: (payload: Record<string, unknown>, payloadType: "payment" | "balanceQuery") => MaybePromise<string>;
   /** extensions.json. */
-  serializeExtensions?(fields: ReadonlyArray<{ key: string; value: string }>): MaybePromise<string>;
-  parseExtensions?(block: string): MaybePromise<Array<{ key: string; value: string }>>;
+  serializeExtensions?: (fields: ReadonlyArray<{ key: string; value: string }>) => MaybePromise<string>;
+  parseExtensions?: (block: string) => MaybePromise<Array<{ key: string; value: string }>>;
   /** boundary.json amount cases; sats travel as decimal strings. */
-  humanToSats?(human: string): MaybePromise<string>;
-  satsToHuman?(sats: string): MaybePromise<string>;
+  humanToSats?: (human: string) => MaybePromise<string>;
+  satsToHuman?: (sats: string) => MaybePromise<string>;
   /** wire-format.json: schema/shape validation, claim echo for paymentHeaders. */
-  validateWireFormat?(type: WireFormatType, value: unknown): MaybePromise<{ valid: boolean; claim?: unknown }>;
+  validateWireFormat?: (type: WireFormatType, value: unknown) => MaybePromise<{ valid: boolean; claim?: unknown }>;
   /** signing.json: hex msgHash (the `hash` the daemon reports). */
-  messageHash?(message: string): MaybePromise<string>;
+  messageHash?: (message: string) => MaybePromise<string>;
   /** signing.json: base64 compact signature for an R-address key (WIF). */
-  signMessage?(message: string, wif: string): MaybePromise<string>;
+  signMessage?: (message: string, wif: string) => MaybePromise<string>;
   /** signing.json + verification.json; identity is supplied for `…@` signers. */
-  verifyMessage?(message: string, signature: string, signer: string, identity?: PinnedIdentity): MaybePromise<boolean>;
+  verifyMessage?: (message: string, signature: string, signer: string, identity?: PinnedIdentity) => MaybePromise<boolean>;
 }
 
 export type CaseStatus = "pass" | "fail" | "skip";

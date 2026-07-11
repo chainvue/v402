@@ -18,5 +18,5 @@ export function wrapFetchWithPayment(fetchImpl: typeof fetch, config: PaymentFet
     }
     return paidFetch(fetchImpl, url, init, resolved);
   };
-  return wrapped as typeof fetch;
+  return wrapped;
 }

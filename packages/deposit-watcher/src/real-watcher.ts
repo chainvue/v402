@@ -78,9 +78,9 @@ export class RealDepositWatcher implements IWatcher {
       } catch (err) {
         this.lastError = err instanceof Error ? err.message : String(err);
       }
-      if (this.running) this.timer = setTimeout(tick, this.config.intervalMs);
+      if (this.running) this.timer = setTimeout(() => void tick(), this.config.intervalMs);
     };
-    this.timer = setTimeout(tick, 0);
+    this.timer = setTimeout(() => void tick(), 0);
   }
 
   async stop(): Promise<void> {

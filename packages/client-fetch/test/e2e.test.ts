@@ -8,7 +8,7 @@ import { isValidUlid } from "@chainvue/v402-protocol";
 import { InMemoryStorage } from "@chainvue/v402-storage";
 import { MockVerusRpc } from "@chainvue/v402-verus-rpc";
 import { LocalKeySigner, decodeWif, signAddressMessage } from "@chainvue/v402-signer-verus";
-import { V402ClientError, ulid, wrapFetchWithPayment } from "../src/index.js";
+import { ulid, wrapFetchWithPayment } from "../src/index.js";
 
 const KEY_A_WIF = "Uw81VDAH8zrvbGJLfo1nfLaWN9tnGMo2U3bB81Zg8MKBvakrNXqP";
 const KEY_A_PRIV = decodeWif(KEY_A_WIF);

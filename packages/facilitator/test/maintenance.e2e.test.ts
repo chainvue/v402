@@ -31,7 +31,7 @@ async function bootApp(overrides: Record<string, unknown> = {}): Promise<INestAp
   const app = moduleRef.createNestApplication();
   configureApp(
     app,
-    buildConfig({}, { cors: (overrides["cors"] as Record<string, unknown> | undefined) ?? { allowedOrigins: [] } }),
+    buildConfig({}, { cors: (overrides["cors"]) ?? { allowedOrigins: [] } }),
   );
   await app.init();
   return app;

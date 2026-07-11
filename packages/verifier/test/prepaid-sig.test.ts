@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { canonicalize, serializeExtensionBlock, type ExtensionField } from "@chainvue/v402-protocol";
 import { InMemoryStorage } from "@chainvue/v402-storage";
 import { MockVerusRpc, VerusRpcError, VerusRpcUnavailableError } from "@chainvue/v402-verus-rpc";

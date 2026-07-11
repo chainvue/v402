@@ -22,7 +22,6 @@ import {
   canonicalize,
   canonicalizeBalanceQuery,
   humanToSats,
-  parseExtensionBlock,
   satsToHuman,
   serializeExtensionBlock,
   type CanonicalPayload,
