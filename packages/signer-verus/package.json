@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-signer-verus",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Signer implementations for v402 clients: NodeSigner (Verus daemon signmessage), EnvSigner and FileSigner (local WIF signing, byte-compatible with verusd, validated against the reference test vectors).",
   "repository": {
     "type": "git",

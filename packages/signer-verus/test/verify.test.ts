@@ -4,6 +4,7 @@ import {
   parseIdentitySignature,
   signAddressMessage,
   signIdentityMessage,
+  signIdentityMessageMultisig,
   verifyAddressSignature,
   verifyIdentitySignature,
   wrapIdentitySignature,
@@ -104,6 +105,69 @@ describe("offline verification — round-trip with our own signer", () => {
     });
     const rotated = { ...V402TEST, primaryAddresses: ["RLjrXPziU4Moc13vc2vGMvNpMmfM7ozZir"] };
     expect(verifyIdentitySignature(message, signature, VRSCTEST_SYSTEM_ID, rotated).valid).toBe(false);
+  });
+});
+
+describe("offline verification — N-of-M multisig round-trip", () => {
+  // Synthetic 2-of-2 state over both published test keys (the live fixture
+  // v402multisig@ mirrors exactly this state on VRSCTEST — see the gated
+  // integration suite).
+  const KEY_B_WIF = "UsLMFdPY9HhXk7P9M6vuQweEaC9cNxQmWsbn7oJnc9z6qiKA55vd";
+  const keyA = decodeWif(KEY_A_WIF);
+  const keyB = decodeWif(KEY_B_WIF);
+  const ADDRESS_A = "RXzn488JQaeEpo7iezaKiK1XLfRQzi2NWT";
+  const ADDRESS_B = "RLjrXPziU4Moc13vc2vGMvNpMmfM7ozZir";
+  const TWO_OF_TWO: IdentityState = {
+    identityAddress: "iDM8ikjVtv6nTgw5VQUtQB1nu6Ketj4u1T",
+    primaryAddresses: [ADDRESS_A, ADDRESS_B],
+    minimumSignatures: 2,
+  };
+  const message = "multisig round-trip probe";
+  const signOptions = {
+    blockHeight: 1141245,
+    systemId: VRSCTEST_SYSTEM_ID,
+    identityAddress: TWO_OF_TWO.identityAddress,
+  };
+
+  it("accepts 2-of-2 with both keys, in either order", () => {
+    for (const keys of [
+      [keyA, keyB],
+      [keyB, keyA],
+    ]) {
+      const signature = signIdentityMessageMultisig(message, keys, signOptions);
+      const result = verifyIdentitySignature(message, signature, VRSCTEST_SYSTEM_ID, TWO_OF_TWO);
+      expect(result.valid).toBe(true);
+      expect([...result.matchedAddresses].sort()).toEqual([ADDRESS_B, ADDRESS_A].sort());
+      expect(parseIdentitySignature(signature).signatures).toHaveLength(2);
+    }
+  });
+
+  it("rejects a single signature against a 2-of-2 policy", () => {
+    const signature = signIdentityMessageMultisig(message, [keyA], signOptions);
+    const result = verifyIdentitySignature(message, signature, VRSCTEST_SYSTEM_ID, TWO_OF_TWO);
+    expect(result.valid).toBe(false);
+    expect(result.matchedAddresses).toEqual([ADDRESS_A]);
+  });
+
+  it("does not let a duplicated key count twice", () => {
+    const signature = signIdentityMessageMultisig(message, [keyA, keyA], signOptions);
+    const result = verifyIdentitySignature(message, signature, VRSCTEST_SYSTEM_ID, TWO_OF_TWO);
+    expect(result.valid).toBe(false);
+    expect(result.matchedAddresses).toEqual([ADDRESS_A]);
+  });
+
+  it("does not let a non-primary key contribute", () => {
+    // sha256 of an arbitrary probe seed — a valid secp key, but not a primary
+    const outsider = new Uint8Array(32).fill(42);
+    const signature = signIdentityMessageMultisig(message, [keyA, outsider], signOptions);
+    const result = verifyIdentitySignature(message, signature, VRSCTEST_SYSTEM_ID, TWO_OF_TWO);
+    expect(result.valid).toBe(false);
+    expect(result.matchedAddresses).toEqual([ADDRESS_A]);
+  });
+
+  it("rejects tampering of a valid 2-of-2 signature", () => {
+    const signature = signIdentityMessageMultisig(message, [keyA, keyB], signOptions);
+    expect(verifyIdentitySignature(message + "x", signature, VRSCTEST_SYSTEM_ID, TWO_OF_TWO).valid).toBe(false);
   });
 });
 

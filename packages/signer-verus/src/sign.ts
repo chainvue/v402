@@ -42,15 +42,35 @@ function signCompactBase64(digest: Uint8Array, privateKey: Uint8Array): string {
  * primary addresses AT the embedded height.
  */
 export function wrapIdentitySignature(compactSignatureBase64: string, blockHeight: number): string {
-  const compact = Buffer.from(compactSignatureBase64, "base64");
-  if (compact.length !== 65) throw new Error(`expected a 65-byte compact signature, got ${compact.length}`);
+  return wrapIdentitySignatures([compactSignatureBase64], blockHeight);
+}
+
+/**
+ * Multisig variant of `wrapIdentitySignature`: one compact65 per signing
+ * key. Verifiers recover a pubkey per signature and count DISTINCT matching
+ * primary addresses against the identity's `minimumsignatures` — signature
+ * order does not matter, duplicate keys do not add weight.
+ */
+export function wrapIdentitySignatures(compactSignaturesBase64: readonly string[], blockHeight: number): string {
+  if (compactSignaturesBase64.length === 0 || compactSignaturesBase64.length > 0xfc) {
+    throw new Error(`expected 1..252 compact signatures, got ${compactSignaturesBase64.length}`);
+  }
   if (!Number.isSafeInteger(blockHeight) || blockHeight <= 0) throw new Error("blockHeight must be a positive integer");
-  const out = Buffer.alloc(1 + 4 + 1 + 1 + 65);
+  const compacts = compactSignaturesBase64.map((b64, i) => {
+    const compact = Buffer.from(b64, "base64");
+    if (compact.length !== 65) throw new Error(`signature ${i}: expected a 65-byte compact signature, got ${compact.length}`);
+    return compact;
+  });
+  const out = Buffer.alloc(1 + 4 + 1 + compacts.length * (1 + 65));
   out[0] = 0x01; // version
   out.writeUInt32LE(blockHeight, 1);
-  out[5] = 0x01; // one signature
-  out[6] = 0x41; // 65-byte vector entry
-  compact.copy(out, 7);
+  out[5] = compacts.length; // sig count (single-byte compactSize, <= 0xfc)
+  let offset = 6;
+  for (const compact of compacts) {
+    out[offset] = 0x41; // 65-byte vector entry
+    compact.copy(out, offset + 1);
+    offset += 1 + 65;
+  }
   return out.toString("base64");
 }
 
@@ -70,11 +90,29 @@ export interface IdentitySignOptions {
  * gated integration suite.
  */
 export function signIdentityMessage(message: string, privateKey: Uint8Array, options: IdentitySignOptions): string {
+  return signIdentityMessageMultisig(message, [privateKey], options);
+}
+
+/**
+ * Sign as an N-of-M multisig VerusID: every key signs the SAME identity
+ * digest; the envelope carries one compact signature per key. Callers must
+ * pass at least `minimumsignatures` DISTINCT primary-address keys for the
+ * result to verify.
+ */
+export function signIdentityMessageMultisig(
+  message: string,
+  privateKeys: readonly Uint8Array[],
+  options: IdentitySignOptions,
+): string {
+  if (privateKeys.length === 0) throw new Error("at least one private key is required");
   const digest = verusIdentitySignDigest(
     message,
     decodeIAddress(options.systemId),
     options.blockHeight,
     decodeIAddress(options.identityAddress),
   );
-  return wrapIdentitySignature(signCompactBase64(digest, privateKey), options.blockHeight);
+  return wrapIdentitySignatures(
+    privateKeys.map((key) => signCompactBase64(digest, key)),
+    options.blockHeight,
+  );
 }

@@ -10,7 +10,14 @@ export {
   type FileSignerOptions,
 } from "./local-signer.js";
 export { verusIdentitySignDigest, verusMessageHash, verusSignDigest } from "./message-hash.js";
-export { signAddressMessage, signIdentityMessage, wrapIdentitySignature, type IdentitySignOptions } from "./sign.js";
+export {
+  signAddressMessage,
+  signIdentityMessage,
+  signIdentityMessageMultisig,
+  wrapIdentitySignature,
+  wrapIdentitySignatures,
+  type IdentitySignOptions,
+} from "./sign.js";
 export { decodeIAddress, decodeRAddress, decodeWif } from "./wif.js";
 export {
   verifyAddressSignature,

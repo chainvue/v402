@@ -8,8 +8,11 @@ import { VerusRpcClient } from "@chainvue/v402-verus-rpc";
 import {
   EnvSigner,
   LocalKeySigner,
+  parseIdentitySignature,
+  signIdentityMessageMultisig,
   verifyAddressSignature,
   verifyIdentitySignature,
+  decodeWif,
   type IdentityState,
 } from "../src/index.js";
 
@@ -23,6 +26,16 @@ const V402TEST = {
   name: "v402test@",
   identityAddress: "iGnQaDzEcrFWg3J9Jg5MqPKCwo52Din4Ma",
   systemId: "iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq", // VRSCTEST
+};
+
+// v402multisig@ — dedicated 2-of-2 fixture identity (registered 2026-07-11):
+// primaries = BOTH published test keys, minimumsignatures = 2, authorities
+// v402revoke@/v402recover@. Never fund. Exists so the offline verifier's
+// N-of-M path is exercised against real chain state.
+const V402MULTISIG = {
+  name: "v402multisig@",
+  identityAddress: "iDM8ikjVtv6nTgw5VQUtQB1nu6Ketj4u1T",
+  systemId: V402TEST.systemId,
 };
 
 describe.skipIf(!RPC_URL)("signer-verus integration (VRSCTEST)", () => {
@@ -96,5 +109,62 @@ describe.skipIf(!RPC_URL)("signer-verus integration (VRSCTEST)", () => {
     const result = verifyIdentitySignature(message, signature, live.identity.systemid, state);
     expect(result.valid).toBe(true);
     expect(verifyIdentitySignature("tampered", signature, live.identity.systemid, state).valid).toBe(false);
+  });
+
+  // N-of-M path against the live 2-of-2 fixture (v402multisig@).
+  describe("2-of-2 multisig identity (v402multisig@)", () => {
+    const liveState = async (): Promise<{ state: IdentityState; systemId: string }> => {
+      const live = await rpc.getIdentity(V402MULTISIG.name);
+      // fixture sanity — if this fails, the identity was tampered with
+      expect(live.identity.identityaddress).toBe(V402MULTISIG.identityAddress);
+      expect(live.identity.minimumsignatures).toBe(2);
+      expect([...live.identity.primaryaddresses].sort()).toEqual([KEY_B.address, KEY_A.address].sort());
+      return {
+        state: {
+          identityAddress: live.identity.identityaddress,
+          primaryAddresses: live.identity.primaryaddresses,
+          minimumSignatures: live.identity.minimumsignatures,
+          revoked: live.status === "revoked",
+        },
+        systemId: live.identity.systemid,
+      };
+    };
+
+    it("a locally built 2-of-2 signature verifies via verifymessage AND offline", async () => {
+      const message = "v402 multisig probe (local 2-of-2)";
+      const height = await rpc.getBlockCount();
+      const signature = signIdentityMessageMultisig(message, [decodeWif(KEY_A.wif), decodeWif(KEY_B.wif)], {
+        blockHeight: height,
+        systemId: V402MULTISIG.systemId,
+        identityAddress: V402MULTISIG.identityAddress,
+      });
+      expect(await rpc.verifyMessage(V402MULTISIG.name, signature, message)).toBe(true);
+      const { state, systemId } = await liveState();
+      expect(verifyIdentitySignature(message, signature, systemId, state).valid).toBe(true);
+      expect(verifyIdentitySignature(message + "x", signature, systemId, state).valid).toBe(false);
+    });
+
+    it("a single signature is rejected by the daemon AND offline (insufficient for 2-of-2)", async () => {
+      const message = "v402 multisig probe (1 sig, must fail)";
+      const height = await rpc.getBlockCount();
+      const signature = signIdentityMessageMultisig(message, [decodeWif(KEY_A.wif)], {
+        blockHeight: height,
+        systemId: V402MULTISIG.systemId,
+        identityAddress: V402MULTISIG.identityAddress,
+      });
+      expect(await rpc.verifyMessage(V402MULTISIG.name, signature, message)).toBe(false);
+      const { state, systemId } = await liveState();
+      const result = verifyIdentitySignature(message, signature, systemId, state);
+      expect(result.valid).toBe(false);
+      expect(result.matchedAddresses).toEqual([KEY_A.address]);
+    });
+
+    it("a daemon-built multisig signature verifies offline (parity)", async () => {
+      const message = "v402 multisig probe (daemon)";
+      const { signature } = await rpc.signMessage(V402MULTISIG.name, message);
+      expect(parseIdentitySignature(signature).signatures).toHaveLength(2);
+      const { state, systemId } = await liveState();
+      expect(verifyIdentitySignature(message, signature, systemId, state).valid).toBe(true);
+    });
   });
 });
