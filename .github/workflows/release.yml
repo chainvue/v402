@@ -96,6 +96,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 26
+          # This job is npm-only; without this, setup-node sees the workspace
+          # packageManager field and demands a pnpm binary for its cache.
+          package-manager-cache: false
 
       - name: From-registry install smoke
         run: node scripts/registry-install-smoke.mjs
