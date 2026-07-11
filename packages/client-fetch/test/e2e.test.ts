@@ -8,7 +8,7 @@ import { isValidUlid } from "@chainvue/v402-protocol";
 import { InMemoryStorage } from "@chainvue/v402-storage";
 import { MockVerusRpc } from "@chainvue/v402-verus-rpc";
 import { LocalKeySigner, decodeWif, signAddressMessage } from "@chainvue/v402-signer-verus";
-import { ulid, wrapFetchWithPayment } from "../src/index.js";
+import { AcceptsCache, ulid, wrapFetchWithPayment } from "../src/index.js";
 
 const KEY_A_WIF = "Uw81VDAH8zrvbGJLfo1nfLaWN9tnGMo2U3bB81Zg8MKBvakrNXqP";
 const KEY_A_PRIV = decodeWif(KEY_A_WIF);
@@ -140,6 +140,77 @@ describe("wrapFetchWithPayment against a real v402 server (cryptographic verific
     await expect(
       paidFetch()(`${baseUrl}/api/graphql`, { method: "POST", body: new FormData() }),
     ).rejects.toMatchObject({ name: "V402ClientError", code: "unsupported-body-type" });
+  });
+
+  describe("accepts cache", () => {
+    let calls = 0;
+    const countingFetch = ((input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      calls++;
+      return fetch(input, init);
+    }) as typeof fetch;
+
+    it("skips the unpaid preflight on repeat calls to the same endpoint", async () => {
+      const clientFetch = wrapFetchWithPayment(countingFetch, { payer: PAYER, signer: new LocalKeySigner(KEY_A_WIF) });
+      calls = 0;
+      expect((await clientFetch(`${baseUrl}/api/tx/cached`)).status).toBe(200);
+      expect(calls).toBe(2); // 402 preflight + paid request
+      expect((await clientFetch(`${baseUrl}/api/tx/cached`)).status).toBe(200);
+      expect(calls).toBe(3); // paid request only — challenge served from cache
+    });
+
+    it("self-heals a stale cached PRICE without an unpaid preflight (fresh ULID, exact debit)", async () => {
+      const cache = new AcceptsCache();
+      const clientFetch = wrapFetchWithPayment(countingFetch, {
+        payer: PAYER,
+        signer: new LocalKeySigner(KEY_A_WIF),
+        acceptsCache: cache,
+      });
+      await clientFetch(`${baseUrl}/api/tx/seed`); // learn the real requirement
+      const real = cache.get(`GET ${baseUrl}/api/tx/seed`)!;
+      cache.set(`GET ${baseUrl}/api/tx/stale-price`, { ...real, amount: "0.005" });
+
+      const before = (await storage.getIdentity(PAYER_KEY))!.balanceSats;
+      calls = 0;
+      const response = await clientFetch(`${baseUrl}/api/tx/stale-price`);
+      expect(response.status).toBe(200);
+      // stale paid attempt (402 price-mismatch) + re-signed paid request
+      expect(calls).toBe(2);
+      const after = (await storage.getIdentity(PAYER_KEY))!.balanceSats;
+      expect(before - after).toBe(100_000n); // debited the REAL price, not the stale one
+      // cache healed: next call pays directly
+      calls = 0;
+      expect((await clientFetch(`${baseUrl}/api/tx/stale-price`)).status).toBe(200);
+      expect(calls).toBe(1);
+    });
+
+    it("self-heals a stale cached payTo (surfaces as invalid-signature) the same way", async () => {
+      const cache = new AcceptsCache();
+      const clientFetch = wrapFetchWithPayment(countingFetch, {
+        payer: PAYER,
+        signer: new LocalKeySigner(KEY_A_WIF),
+        acceptsCache: cache,
+      });
+      await clientFetch(`${baseUrl}/api/tx/seed2`);
+      const real = cache.get(`GET ${baseUrl}/api/tx/seed2`)!;
+      cache.set(`GET ${baseUrl}/api/tx/stale-payto`, { ...real, payTo: "rotated@" });
+
+      calls = 0;
+      const response = await clientFetch(`${baseUrl}/api/tx/stale-payto`);
+      expect(response.status).toBe(200);
+      expect(calls).toBe(2); // 402 invalid-signature + re-signed from fresh accepts
+    });
+
+    it("acceptsCache: false restores the always-preflight behavior", async () => {
+      const clientFetch = wrapFetchWithPayment(countingFetch, {
+        payer: PAYER,
+        signer: new LocalKeySigner(KEY_A_WIF),
+        acceptsCache: false,
+      });
+      calls = 0;
+      await clientFetch(`${baseUrl}/api/tx/uncached`);
+      await clientFetch(`${baseUrl}/api/tx/uncached`);
+      expect(calls).toBe(4); // two full handshakes
+    });
   });
 });
 

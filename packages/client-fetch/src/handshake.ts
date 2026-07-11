@@ -10,6 +10,7 @@ import {
   type PaymentRequirement,
 } from "@chainvue/v402-protocol";
 import type { Signer } from "@chainvue/v402-signer-verus";
+import { AcceptsCache, type AcceptsCacheOptions } from "./accepts-cache.js";
 import { V402ClientError } from "./errors.js";
 import { ulid } from "./ulid.js";
 
@@ -28,14 +29,25 @@ export interface PaymentFetchConfig {
   bodyHash?: "auto" | "never";
   /** Cap on honoring Retry-After. Default 5000ms. */
   maxRetryAfterMs?: number;
+  /**
+   * Cache the 402 challenge per endpoint and skip the unpaid preflight on
+   * repeat calls. Self-healing: ANY 402 on a cached attempt (price change,
+   * payTo/domain rotation) re-handshakes with that response's fresh accepts.
+   * Default on; `false` restores the always-preflight behavior; an
+   * `AcceptsCache` instance can be shared across wrappers (or seeded in tests).
+   */
+  acceptsCache?: boolean | AcceptsCacheOptions | AcceptsCache;
   /** Injectable for tests. */
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
 }
 
-type ResolvedConfig = Required<PaymentFetchConfig>;
+type ResolvedConfig = Required<Omit<PaymentFetchConfig, "acceptsCache">> & {
+  acceptsCache: AcceptsCache | undefined;
+};
 
 export function resolveConfig(config: PaymentFetchConfig): ResolvedConfig {
+  const { acceptsCache, ...rest } = config;
   return {
     maxRetries: 2,
     priceMismatchRetries: 1,
@@ -43,7 +55,13 @@ export function resolveConfig(config: PaymentFetchConfig): ResolvedConfig {
     maxRetryAfterMs: 5000,
     sleep: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
     now: () => Math.floor(Date.now() / 1000),
-    ...config,
+    ...rest,
+    acceptsCache:
+      acceptsCache === false
+        ? undefined
+        : acceptsCache instanceof AcceptsCache
+          ? acceptsCache
+          : new AcceptsCache(typeof acceptsCache === "object" ? acceptsCache : {}),
   };
 }
 
@@ -108,13 +126,33 @@ export async function paidFetch(
   init: RequestInit | undefined,
   config: ResolvedConfig,
 ): Promise<Response> {
-  const first = await fetchImpl(url, init);
-  if (first.status !== 402) return first;
+  const cacheKey = AcceptsCache.keyFor(init?.method ?? "GET", new URL(url));
+  let requirement = config.acceptsCache?.get(cacheKey);
+  let fromCache = requirement !== undefined;
 
-  let { requirement } = await parse402(first);
+  if (requirement === undefined) {
+    const first = await fetchImpl(url, init);
+    if (first.status !== 402) return first;
+    ({ requirement } = await parse402(first));
+  }
+
   for (let recovery = 0; ; recovery++) {
     const response = await sendPaid(fetchImpl, url, init, requirement, config);
-    if (response.status === 402 && recovery < config.priceMismatchRetries) {
+    if (response.status !== 402) {
+      // any definitive answer proves the requirement is current
+      config.acceptsCache?.set(cacheKey, requirement);
+      return response;
+    }
+    config.acceptsCache?.delete(cacheKey);
+    if (fromCache) {
+      // stale cache (price, payTo or domain rotated since) — this 402 IS the
+      // fresh challenge; re-sign from its accepts without consuming the
+      // price-mismatch budget. Nothing was reserved, a fresh ULID is safe.
+      fromCache = false;
+      ({ requirement } = await parse402(response.clone()));
+      continue;
+    }
+    if (recovery < config.priceMismatchRetries) {
       const parsed = await parse402(response.clone());
       if (parsed.errorCode === "price-mismatch") {
         requirement = parsed.requirement; // current accepts from the M6 response

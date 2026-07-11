@@ -38,18 +38,21 @@ export class V402Client {
   private readonly options: V402ClientOptions;
   private readonly fetchImpl: typeof fetch;
   private readonly facilitatorBase: string;
+  // resolved ONCE — the accepts cache must survive across fetch() calls
+  private readonly paymentConfig: ReturnType<typeof resolveConfig>;
   private facilitatorDiscovery: (DiscoveryDocument & { canonicalDomain?: string; network?: string }) | undefined;
 
   constructor(options: V402ClientOptions) {
     this.options = options;
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.facilitatorBase = options.facilitator.replace(/\/$/, "");
+    const { identity, signer, facilitator: _f, fetchImpl: _i, ...rest } = options;
+    this.paymentConfig = resolveConfig({ payer: identity, signer, ...rest });
   }
 
   /** Paid fetch — wrapFetchWithPayment semantics. */
   fetch(url: string | URL, init?: RequestInit): Promise<Response> {
-    const { identity, signer, facilitator: _f, fetchImpl: _i, ...rest } = this.options;
-    return paidFetch(this.fetchImpl, url, init, resolveConfig({ payer: identity, signer, ...rest }));
+    return paidFetch(this.fetchImpl, url, init, this.paymentConfig);
   }
 
   /** `.well-known/v402` of the given base URL (or the facilitator). Cached for the facilitator. */
