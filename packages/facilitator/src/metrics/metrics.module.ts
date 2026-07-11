@@ -60,6 +60,11 @@ const metricProviders = [
     name: "v402_reconciliation_last_ok_timestamp",
     help: "Unix seconds of the last clean reconciliation run",
   }),
+  makeCounterProvider({
+    name: "v402_identity_cache_events_total",
+    help: "CachedIdentityProvider lookups by outcome (offline verifier mode): hit, miss, refresh (self-heal bypassed the TTL), refresh_suppressed (self-heal rate limit held)",
+    labelNames: ["event"],
+  }),
 ];
 
 @Module({

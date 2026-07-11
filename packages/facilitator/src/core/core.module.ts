@@ -11,8 +11,11 @@ import { SqliteStorage } from "@chainvue/v402-storage-sqlite";
 import { VerusRpcClient, type IVerusRpc } from "@chainvue/v402-verus-rpc";
 import { CachedIdentityProvider, VerifierRegistry, VerusPrepaidSigVerifier } from "@chainvue/v402-verifier";
 import { SCHEME_VERUS_PREPAID_SIG } from "@chainvue/v402-protocol";
+import { getToken } from "@willsoto/nestjs-prometheus";
+import type { Counter } from "prom-client";
 import { V402_CONFIG } from "../config/config.module.js";
 import type { FacilitatorConfig } from "../config/schema.js";
+import { MetricsModule } from "../metrics/metrics.module.js";
 
 export const STORAGE = Symbol("STORAGE");
 export const VERUS_RPC = Symbol("VERUS_RPC");
@@ -52,6 +55,7 @@ export class CoreModule {
     return {
       module: CoreModule,
       global: true,
+      imports: [MetricsModule],
       providers: [
         {
           provide: STORAGE,
@@ -75,8 +79,13 @@ export class CoreModule {
         },
         {
           provide: VERIFIER_REGISTRY,
-          inject: [V402_CONFIG, STORAGE, VERUS_RPC],
-          useFactory: (config: FacilitatorConfig, storage: IStorage, rpc: IVerusRpc): VerifierRegistry => {
+          inject: [V402_CONFIG, STORAGE, VERUS_RPC, getToken("v402_identity_cache_events_total")],
+          useFactory: (
+            config: FacilitatorConfig,
+            storage: IStorage,
+            rpc: IVerusRpc,
+            cacheEvents: Counter,
+          ): VerifierRegistry => {
             const registry = new VerifierRegistry();
             for (const scheme of config.schemes) {
               if (!scheme.enabled) continue;
@@ -90,6 +99,7 @@ export class CoreModule {
                           identityProvider: new CachedIdentityProvider(rpc, {
                             ttlSec: config.verifier.identityCacheTtlSec,
                             maxEntries: config.verifier.identityCacheMaxSize,
+                            onEvent: (event) => cacheEvents.inc({ event }),
                           }),
                         }
                       : {}),

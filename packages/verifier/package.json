@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-verifier",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Framework-agnostic verification core of v402: multi-scheme registry and the verus-prepaid-sig verifier (RPC mode) — amount pre-check, extension validation, bodyHash policy, timestamp window, two-phase debit against injected storage.",
   "repository": {
     "type": "git",

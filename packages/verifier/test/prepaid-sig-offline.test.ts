@@ -264,4 +264,37 @@ describe("CachedIdentityProvider", () => {
     await provider.refreshIdentityState(PAYER);
     expect(rpc.calls.filter((c) => c.method === "getIdentity")).toHaveLength(2);
   });
+
+  it("reports hit/miss/refresh/refresh_suppressed to the observability hook", async () => {
+    let clock = 1000;
+    const events: string[] = [];
+    const rpc = new MockVerusRpc({ getIdentity: async () => identityResult() });
+    const provider = new CachedIdentityProvider(rpc, {
+      ttlSec: 60,
+      minRefreshAgeSec: 5,
+      now: () => clock,
+      onEvent: (event) => events.push(event),
+    });
+    await provider.getIdentityState(PAYER); // cold -> miss
+    await provider.getIdentityState(PAYER); // fresh -> hit
+    clock = 1002;
+    await provider.refreshIdentityState(PAYER); // young entry -> suppressed
+    clock = 1006;
+    await provider.refreshIdentityState(PAYER); // past guard -> refresh
+    clock = 1100;
+    await provider.getIdentityState(PAYER); // TTL expired -> miss
+    expect(events).toEqual(["miss", "hit", "refresh_suppressed", "refresh", "miss"]);
+  });
+
+  it("a throwing observability hook never breaks lookups", async () => {
+    const rpc = new MockVerusRpc({ getIdentity: async () => identityResult() });
+    const provider = new CachedIdentityProvider(rpc, {
+      now: () => 1000,
+      onEvent: () => {
+        throw new Error("metrics backend down");
+      },
+    });
+    expect((await provider.getIdentityState(PAYER)).revoked).toBe(false);
+    expect((await provider.refreshIdentityState(PAYER)).revoked).toBe(false);
+  });
 });

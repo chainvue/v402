@@ -21,6 +21,17 @@ export interface IdentityStateProvider {
   refreshIdentityState(identity: string): Promise<ResolvedIdentityState>;
 }
 
+/**
+ * Cache observability events:
+ * - `hit`    — served from a fresh cache entry (no RPC)
+ * - `miss`   — no fresh entry, getidentity RPC issued (or joined in-flight)
+ * - `refresh` — self-heal refresh actually bypassed the TTL (RPC issued);
+ *   a spike means keys really rotated — or invalid-signature probing
+ * - `refresh_suppressed` — self-heal request answered from a young entry
+ *   (rate limit held; the invalid-signature-spam signal)
+ */
+export type IdentityCacheEvent = "hit" | "miss" | "refresh" | "refresh_suppressed";
+
 export interface CachedIdentityProviderOptions {
   /**
    * How long a fetched identity state is served from cache. Bounds how long
@@ -33,6 +44,12 @@ export interface CachedIdentityProviderOptions {
   maxEntries?: number;
   /** Unix-seconds clock, injectable for tests. */
   now?: () => number;
+  /**
+   * Observability hook (e.g. Prometheus counter). Called synchronously per
+   * lookup; exceptions are swallowed — metrics must never break
+   * verification.
+   */
+  onEvent?: (event: IdentityCacheEvent) => void;
 }
 
 interface CacheEntry {
@@ -53,6 +70,7 @@ export class CachedIdentityProvider implements IdentityStateProvider {
   private readonly minRefreshAgeSec: number;
   private readonly maxEntries: number;
   private readonly now: () => number;
+  private readonly onEvent: ((event: IdentityCacheEvent) => void) | undefined;
   private readonly cache = new Map<string, CacheEntry>();
   private readonly inflight = new Map<string, Promise<ResolvedIdentityState>>();
 
@@ -62,20 +80,38 @@ export class CachedIdentityProvider implements IdentityStateProvider {
     this.minRefreshAgeSec = options.minRefreshAgeSec ?? 5;
     this.maxEntries = options.maxEntries ?? 10_000;
     this.now = options.now ?? (() => Math.floor(Date.now() / 1000));
+    this.onEvent = options.onEvent;
   }
 
   async getIdentityState(identity: string): Promise<ResolvedIdentityState> {
     const key = normalizeIdentityKey(identity);
     const entry = this.cache.get(key);
-    if (entry !== undefined && this.now() - entry.fetchedAt < this.ttlSec) return entry.state;
+    if (entry !== undefined && this.now() - entry.fetchedAt < this.ttlSec) {
+      this.emit("hit");
+      return entry.state;
+    }
+    this.emit("miss");
     return this.fetch(key, identity);
   }
 
   async refreshIdentityState(identity: string): Promise<ResolvedIdentityState> {
     const key = normalizeIdentityKey(identity);
     const entry = this.cache.get(key);
-    if (entry !== undefined && this.now() - entry.fetchedAt < this.minRefreshAgeSec) return entry.state;
+    if (entry !== undefined && this.now() - entry.fetchedAt < this.minRefreshAgeSec) {
+      this.emit("refresh_suppressed");
+      return entry.state;
+    }
+    this.emit("refresh");
     return this.fetch(key, identity);
+  }
+
+  private emit(event: IdentityCacheEvent): void {
+    if (this.onEvent === undefined) return;
+    try {
+      this.onEvent(event);
+    } catch {
+      // metrics must never break verification
+    }
   }
 
   private fetch(key: string, identity: string): Promise<ResolvedIdentityState> {
