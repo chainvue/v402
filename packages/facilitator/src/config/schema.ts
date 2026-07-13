@@ -178,6 +178,14 @@ export function buildConfig(env: NodeJS.ProcessEnv, overrides: Record<string, un
     },
     watcher: {
       ...(env["V402_WATCHER_MODE"] !== undefined ? { mode: env["V402_WATCHER_MODE"] } : {}),
+      // Demo/dev overrides — production keeps the schema defaults (10 conf /
+      // 15s poll). Values stay schema-validated (min 1 / min 100ms).
+      ...(env["V402_WATCHER_MIN_CONF"] !== undefined
+        ? { minConfirmations: Number(env["V402_WATCHER_MIN_CONF"]) }
+        : {}),
+      ...(env["V402_WATCHER_INTERVAL_MS"] !== undefined
+        ? { intervalMs: Number(env["V402_WATCHER_INTERVAL_MS"]) }
+        : {}),
     },
     cors: {},
     throttle: {},

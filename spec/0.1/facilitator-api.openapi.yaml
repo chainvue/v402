@@ -230,6 +230,57 @@ paths:
               schema: { $ref: "#/components/schemas/BalanceResponse" }
         default: { $ref: "#/components/responses/Error" }
 
+  /v1/ledger:
+    get:
+      tags: [public]
+      operationId: ledger
+      summary: Signature-authenticated ledger statement
+      description: >-
+        The identity's statement — every ledger entry (deposits, debits,
+        refunds, reorg adjustments) with running balances. Authenticates via
+        a VerusID signature over the domain-separated
+        `v402-ledger-query/0.1` canonical payload; same replay protection
+        and checklatest ownership rules as /v1/balance. Pagination
+        parameters are outside the signature (they select what the
+        authenticated owner sees, never who may see it). Additive
+        2026-07-14.
+      parameters:
+        - name: X-V402-Payer
+          in: header
+          required: true
+          schema: { type: string }
+        - name: X-V402-Request-Id
+          in: header
+          required: true
+          schema: { type: string }
+          description: Fresh ULID per query
+        - name: X-V402-Issued-At
+          in: header
+          required: true
+          schema: { type: string }
+          description: Unix seconds, ±300 s acceptance window
+        - name: X-V402-Signature
+          in: header
+          required: true
+          schema: { type: string }
+          description: Base64 signature over the ledger-query canonical payload
+        - name: afterId
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0 }
+          description: Return entries with id > afterId (pagination cursor)
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Ledger entries, oldest first
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LedgerResponse" }
+        default: { $ref: "#/components/responses/Error" }
+
   /v1/health:
     get:
       tags: [public]
@@ -373,6 +424,11 @@ components:
       type: string
       pattern: "^[0-9]+(\\.[0-9]+)?$"
       description: Human decimal amount in minimal form ("0.001", never padded)
+
+    SignedHumanAmount:
+      type: string
+      pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+      description: Signed human decimal amount (+credit / −debit), minimal form
 
     UnixSeconds:
       type: integer
@@ -624,11 +680,51 @@ components:
         balance: { $ref: "#/components/schemas/HumanAmount" }
         reserved: { $ref: "#/components/schemas/HumanAmount" }
         available: { $ref: "#/components/schemas/HumanAmount" }
+        pending:
+          allOf: [{ $ref: "#/components/schemas/HumanAmount" }]
+          description: >-
+            Detected but not yet credited deposits (confirmations
+            accumulating). Additive 2026-07-14; absent on older facilitators.
         balanceSats: { $ref: "#/components/schemas/SatsString" }
         reservedSats: { $ref: "#/components/schemas/SatsString" }
         availableSats: { $ref: "#/components/schemas/SatsString" }
+        pendingSats: { $ref: "#/components/schemas/SatsString" }
         firstDepositAt: { $ref: "#/components/schemas/UnixSeconds" }
         lastRequestAt: { $ref: "#/components/schemas/UnixSeconds" }
+      additionalProperties: true
+
+    LedgerResponse:
+      type: object
+      required: [identity, entries, count]
+      properties:
+        identity:
+          type: string
+          description: Normalized identity key
+        entries:
+          type: array
+          items:
+            type: object
+            required: [id, kind, reason, amount, amountSats, balanceAfter, balanceAfterSats, createdAt]
+            properties:
+              id: { type: integer }
+              kind:
+                type: string
+                enum: [deposit, debit, refund, reorg_adjust]
+              reason:
+                type: string
+                enum: [reserve, commit, late_commit, rollback, reaper_expired, deposit_credited, reorg]
+              amount: { $ref: "#/components/schemas/SignedHumanAmount" }
+              amountSats: { $ref: "#/components/schemas/SatsString" }
+              balanceAfter: { $ref: "#/components/schemas/HumanAmount" }
+              balanceAfterSats: { $ref: "#/components/schemas/SatsString" }
+              requestId: { type: string }
+              depositId: { type: integer }
+              createdAt: { $ref: "#/components/schemas/UnixSeconds" }
+            additionalProperties: true
+        count: { type: integer }
+        nextAfterId:
+          type: integer
+          description: Present when another page exists — pass as afterId
       additionalProperties: true
 
     HealthResponse:

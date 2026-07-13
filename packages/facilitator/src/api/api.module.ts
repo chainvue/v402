@@ -4,6 +4,7 @@ import { BalanceController } from "./balance.controller.js";
 import { DiscoveryController } from "./discovery.controller.js";
 import { HealthController } from "./health.controller.js";
 import { IdentityController } from "./identity.controller.js";
+import { LedgerController } from "./ledger.controller.js";
 import { PaymentsController } from "./payments.controller.js";
 import { TopupController } from "./topup.controller.js";
 
@@ -15,6 +16,7 @@ import { TopupController } from "./topup.controller.js";
     DiscoveryController,
     TopupController,
     BalanceController,
+    LedgerController,
     HealthController,
   ],
 })

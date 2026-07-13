@@ -21,3 +21,5 @@ export function schemeContextLine(scheme: string, schemeVersion: string): string
  * balance query or vice versa (domain separation).
  */
 export const BALANCE_QUERY_CONTEXT = "v402-balance-query/0.1";
+/** Context line of the signed ledger-statement query (additive, 2026-07-14). */
+export const LEDGER_QUERY_CONTEXT = "v402-ledger-query/0.1";

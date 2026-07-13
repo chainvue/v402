@@ -1,6 +1,6 @@
-import { Controller, Get, HttpException, Inject, Req } from "@nestjs/common";
+import { Controller, Get, HttpException, Inject, Query, Req } from "@nestjs/common";
 import {
-  canonicalizeBalanceQuery,
+  canonicalizeLedgerQuery,
   identitySchema,
   isBase64Signature,
   isValidUlid,
@@ -28,14 +28,20 @@ function single(headers: HeaderMap["headers"], name: string): string {
   return value;
 }
 
+const MAX_PAGE = 100;
+
 /**
- * GET /v1/balance — signature-authenticated (plan § Topup Instructions
- * Endpoint): the client signs the domain-separated `v402-balance-query/0.1`
- * canonical payload, so only the identity owner can read their balance.
- * Replay-protected via spent_requests (amount 0, committed).
+ * GET /v1/ledger — the identity's STATEMENT ("Kontoauszug"): every ledger
+ * entry (deposits, debits, refunds, reorg adjustments) with running
+ * balances. Signature-authenticated exactly like /v1/balance, under its own
+ * domain-separated context (`v402-ledger-query/0.1`); replay-protected via
+ * spent_requests. Pagination (`afterId`, `limit`) is deliberately outside
+ * the signature: it selects what the AUTHENTICATED owner sees, never who
+ * may see it. Added 2026-07-14 from live agent feedback ("a bank account
+ * without a Kontoauszug").
  */
-@Controller("v1/balance")
-export class BalanceController {
+@Controller("v1/ledger")
+export class LedgerController {
   constructor(
     @Inject(V402_CONFIG) private readonly config: FacilitatorConfig,
     @Inject(STORAGE) private readonly storage: IStorage,
@@ -43,7 +49,11 @@ export class BalanceController {
   ) {}
 
   @Get()
-  async balance(@Req() request: HeaderMap): Promise<unknown> {
+  async ledger(
+    @Req() request: HeaderMap,
+    @Query("afterId") afterIdRaw?: string,
+    @Query("limit") limitRaw?: string,
+  ): Promise<unknown> {
     const payer = single(request.headers, "x-v402-payer");
     const requestId = single(request.headers, "x-v402-request-id");
     const issuedAtRaw = single(request.headers, "x-v402-issued-at");
@@ -54,13 +64,22 @@ export class BalanceController {
     if (!/^(?:0|[1-9]\d*)$/.test(issuedAtRaw)) reject(400, "invalid-headers", "invalid X-V402-Issued-At");
     if (!isBase64Signature(signature)) reject(400, "invalid-headers", "X-V402-Signature must be standard Base64");
 
+    const afterId = afterIdRaw === undefined ? undefined : Number(afterIdRaw);
+    if (afterId !== undefined && (!Number.isSafeInteger(afterId) || afterId < 0)) {
+      reject(400, "invalid-query", "afterId must be a non-negative integer");
+    }
+    const limit = limitRaw === undefined ? 50 : Number(limitRaw);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_PAGE) {
+      reject(400, "invalid-query", `limit must be an integer in [1, ${MAX_PAGE}]`);
+    }
+
     const issuedAt = Number(issuedAtRaw);
     const now = Math.floor(Date.now() / 1000);
     if (Math.abs(now - issuedAt) > this.config.payment.timestampToleranceSec) {
       reject(400, "timestamp-out-of-window", "issuedAt outside the accepted window");
     }
 
-    const canonical = canonicalizeBalanceQuery({
+    const canonical = canonicalizeLedgerQuery({
       canonicalDomain: this.config.payment.canonicalDomain,
       network: this.config.verus.chain,
       payer,
@@ -69,10 +88,8 @@ export class BalanceController {
     });
     let valid: boolean;
     try {
-      // checkLatest=true — ownership must be evaluated against the CURRENT
-      // identity state, same as the payment path: a rotated-out or revoked
-      // primary key must not keep reading balances via an old embedded height
-      // (security-review finding 2026-07-11, docs/RISKS.md Layer 4).
+      // checkLatest=true — same rule as the balance/payment paths: a
+      // rotated-out or revoked primary key must not keep reading statements.
       valid = await this.rpc.verifyMessage(payer, signature, canonical, true);
     } catch (err) {
       if (err instanceof VerusRpcUnavailableError) {
@@ -89,34 +106,34 @@ export class BalanceController {
       issuedAt,
       receivedAt: now,
       method: "GET",
-      path: "/v1/balance",
+      path: "/v1/ledger",
     });
     if (recorded.status === "replay") {
       reject(409, "replay", "requestId already spent", { previousStatus: recorded.previousStatus });
     }
 
-    const account = await this.storage.getIdentity(identityKey);
-    const availableSats = account?.balanceSats ?? 0n;
-    const reservedSats = await this.storage.sumReservedSats(identityKey);
-    // Detected-but-uncredited deposits (UX finding 2026-07-14): without this
-    // an agent polling during the confirmation window cannot distinguish
-    // "money on the way" from "deposit lost/unattributed".
-    const pendingSats = await this.storage.sumPendingDepositSats(identityKey);
-    const balanceSats = availableSats + reservedSats;
+    const entries = await this.storage.listLedgerEntries(identityKey, {
+      ...(afterId !== undefined ? { afterId } : {}),
+      limit,
+    });
+    const lastId = entries.length > 0 ? entries[entries.length - 1]!.id : null;
     return {
       identity: identityKey,
-      balance: satsToHuman(balanceSats),
-      reserved: satsToHuman(reservedSats),
-      available: satsToHuman(availableSats),
-      pending: satsToHuman(pendingSats),
-      balanceSats: balanceSats.toString(),
-      reservedSats: reservedSats.toString(),
-      availableSats: availableSats.toString(),
-      pendingSats: pendingSats.toString(),
-      // schema tracks the FIRST deposit (plan data model); the plan's response
-      // example says lastDepositAt — deliberate deviation, see RISKS.md
-      ...(account?.firstDepositAt !== undefined ? { firstDepositAt: account.firstDepositAt } : {}),
-      ...(account?.lastRequestAt !== undefined ? { lastRequestAt: account.lastRequestAt } : {}),
+      entries: entries.map((entry) => ({
+        id: entry.id,
+        kind: entry.kind,
+        reason: entry.reason,
+        amount: satsToHuman(entry.amountSats),
+        amountSats: entry.amountSats.toString(),
+        balanceAfter: satsToHuman(entry.balanceAfterSats),
+        balanceAfterSats: entry.balanceAfterSats.toString(),
+        ...(entry.requestId !== undefined ? { requestId: entry.requestId } : {}),
+        ...(entry.depositId !== undefined ? { depositId: entry.depositId } : {}),
+        createdAt: entry.createdAt,
+      })),
+      count: entries.length,
+      // Pass nextAfterId back as afterId to fetch the following page.
+      ...(entries.length === limit && lastId !== null ? { nextAfterId: lastId } : {}),
     };
   }
 }

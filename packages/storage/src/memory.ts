@@ -251,6 +251,20 @@ export class InMemoryStorage implements IStorage {
     if (deposit) deposit.confirmations = confirmations;
   }
 
+  async sumPendingDepositSats(identityId: string): Promise<bigint> {
+    let total = 0n;
+    for (const deposit of this.depositsByKey.values()) {
+      if (
+        deposit.identityId === identityId &&
+        deposit.creditedAt === undefined &&
+        deposit.reorgedAt === undefined
+      ) {
+        total += deposit.amountSats;
+      }
+    }
+    return total;
+  }
+
   async listUncreditedDeposits(): Promise<DepositRecord[]> {
     return [...this.depositsByKey.values()]
       .filter((d) => d.creditedAt === undefined && d.reorgedAt === undefined)

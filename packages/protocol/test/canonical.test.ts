@@ -3,6 +3,7 @@ import {
   V402ProtocolError,
   canonicalize,
   canonicalizeBalanceQuery,
+  canonicalizeLedgerQuery,
   isValidUlid,
   type CanonicalPayload,
 } from "../src/index.js";
@@ -172,6 +173,40 @@ describe("canonicalizeBalanceQuery", () => {
       issuedAt: basePayload.issuedAt,
     });
     expect(balance.split("\n")[0]).not.toBe(canonicalize(basePayload).split("\n")[0]);
+  });
+});
+
+describe("canonicalizeLedgerQuery", () => {
+  it("produces the normative ledger-query example from spec/0.1/canonical-payload.md §7.1", () => {
+    expect(
+      canonicalizeLedgerQuery({
+        canonicalDomain: "facilitator.example.com",
+        network: "vrsctest",
+        payer: "v402.demoAgent@",
+        requestId: "01H8XGABCDEF0123456789QRST",
+        issuedAt: 1783650000,
+      }),
+    ).toBe(
+      "v402-ledger-query/0.1\n" +
+        "canonicalDomain: facilitator.example.com\n" +
+        "network: vrsctest\n" +
+        "payer: v402.demoAgent@\n" +
+        "requestId: 01H8XGABCDEF0123456789QRST\n" +
+        "issuedAt: 1783650000",
+    );
+  });
+
+  it("is domain-separated from the balance query via line 1", () => {
+    const payload = {
+      canonicalDomain: "facilitator.example.com",
+      network: "vrsctest",
+      payer: "v402.demoAgent@",
+      requestId: "01H8XGABCDEF0123456789QRST",
+      issuedAt: 1783650000,
+    };
+    expect(canonicalizeLedgerQuery(payload).split("\n")[0]).not.toBe(
+      canonicalizeBalanceQuery(payload).split("\n")[0],
+    );
   });
 });
 

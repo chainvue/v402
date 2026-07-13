@@ -23,7 +23,7 @@ export {
   serializeExtensionBlock,
   parseExtensionBlock,
 } from "./extensions.js";
-export { canonicalize, canonicalizeBalanceQuery, isValidUlid } from "./canonical.js";
+export { canonicalize, canonicalizeBalanceQuery, canonicalizeLedgerQuery, isValidUlid } from "./canonical.js";
 export { normalizeIdentityKey } from "./identity.js";
 export { isBase64Signature, assertBase64Signature } from "./signature.js";
 export {

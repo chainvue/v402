@@ -175,6 +175,64 @@ describe("OpenAPI document matches the implementation (e2e)", () => {
     expectDocumented("/v1/balance", "get", 200, res.body);
   });
 
+  it("GET /v1/balance reports pending (detected-uncredited) deposits", async () => {
+    const deposit = await storage.insertDeposit({
+      identityId: PAYER_KEY,
+      amountSats: 5_000_000n,
+      currency: "VRSCTEST",
+      txid: "openapi-pending",
+      vout: 0,
+      blockHeight: 2,
+      blockHash: "h2",
+      confirmations: 2,
+      detectedAt: ISSUED_AT,
+      origin: "real",
+    });
+    const res = await request(server())
+      .get("/v1/balance")
+      .set({
+        "x-v402-payer": PAYER,
+        "x-v402-request-id": rid("ZP"),
+        "x-v402-issued-at": String(ISSUED_AT),
+        "x-v402-signature": "SGVsbG8rL3dvcmxkQUJDRA==",
+      })
+      .expect(200);
+    expectDocumented("/v1/balance", "get", 200, res.body);
+    expect(res.body.pending).toBe("0.05");
+    expect(res.body.pendingSats).toBe("5000000");
+    // credit it so later tests see a stable pending of 0 again
+    await storage.creditDeposit(deposit.id, ISSUED_AT);
+  });
+
+  it("GET /v1/ledger (signature-authenticated statement)", async () => {
+    const res = await request(server())
+      .get("/v1/ledger")
+      .set({
+        "x-v402-payer": PAYER,
+        "x-v402-request-id": rid("ZM"),
+        "x-v402-issued-at": String(ISSUED_AT),
+        "x-v402-signature": "SGVsbG8rL3dvcmxkQUJDRA==",
+      })
+      .expect(200);
+    expectDocumented("/v1/ledger", "get", 200, res.body);
+    expect(res.body.identity).toBe(PAYER_KEY);
+    expect(res.body.count).toBeGreaterThan(0);
+    expect(res.body.entries[0].reason).toBe("deposit_credited");
+    expect(res.body.entries[0].balanceAfterSats).toBe("10000000");
+  });
+
+  it("GET /v1/ledger replays are rejected with 409", async () => {
+    const headers = {
+      "x-v402-payer": PAYER,
+      "x-v402-request-id": rid("ZR"),
+      "x-v402-issued-at": String(ISSUED_AT),
+      "x-v402-signature": "SGVsbG8rL3dvcmxkQUJDRA==",
+    };
+    await request(server()).get("/v1/ledger").set(headers).expect(200);
+    const replay = await request(server()).get("/v1/ledger").set(headers).expect(409);
+    expect(replay.body.error.code).toBe("replay");
+  });
+
   it("POST /v1/verify (201) and its error envelope (402)", async () => {
     const { user, pass } = authed();
     const ok = await request(server()).post("/v1/verify").auth(user, pass).send(paymentBody(rid("ZB"))).expect(201);
@@ -263,6 +321,7 @@ describe("OpenAPI document matches the implementation (e2e)", () => {
         "GET /.well-known/v402",
         "GET /v1/topup-instructions",
         "GET /v1/balance",
+        "GET /v1/ledger",
         "GET /v1/health",
         "GET /metrics",
         "POST /admin/simulate-deposit",

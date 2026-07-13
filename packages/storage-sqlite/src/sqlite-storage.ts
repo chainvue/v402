@@ -360,6 +360,19 @@ export class SqliteStorage implements IStorage {
     return sum;
   }
 
+  async sumPendingDepositSats(identityId: string): Promise<bigint> {
+    const rows = this.use()
+      .select({ amount: deposits.amount })
+      .from(deposits)
+      .where(
+        and(eq(deposits.identityId, identityId), isNull(deposits.creditedAt), isNull(deposits.reorgedAt)),
+      )
+      .all();
+    let sum = 0n;
+    for (const row of rows) sum += BigInt(row.amount);
+    return sum;
+  }
+
   async recordBalanceQuery(input: RecordBalanceQueryInput): Promise<RecordBalanceQueryResult> {
     try {
       return this.writeTx((tx): RecordBalanceQueryResult => {

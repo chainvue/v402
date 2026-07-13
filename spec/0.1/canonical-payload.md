@@ -146,6 +146,25 @@ Same field grammars as § 3; same LF/no-trailing-newline rules as § 2; no
 extension section. Replay protection follows the payment semantics
 (`requestId` burned in the same store).
 
+### 7.1 Ledger statement query (additive, 2026-07-14)
+
+The signed ledger query (`GET /v1/ledger`) reuses the balance-query field
+set under its own context line — the three read contexts (payment, balance,
+ledger) are mutually non-verifiable by construction:
+
+```
+v402-ledger-query/0.1
+canonicalDomain: facilitator.example.com
+network: vrsctest
+payer: v402test.demoAgent@
+requestId: 01H8XGABCDEF0123456789QRST
+issuedAt: 1783650000
+```
+
+Pagination parameters (`afterId`, `limit`) are deliberately OUTSIDE the
+signature: they select what the authenticated owner sees, never who may
+see it, and each signature is single-use via the shared replay store.
+
 ## 8. Reference test vectors
 
 [`test-vectors/`](./test-vectors/) is the conformance gate for this

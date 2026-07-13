@@ -1,7 +1,7 @@
 import { V402ProtocolError } from "./errors.js";
 import { isValidHumanAmount } from "./amount.js";
 import { serializeExtensionBlock } from "./extensions.js";
-import { BALANCE_QUERY_CONTEXT, schemeContextLine } from "./version.js";
+import { BALANCE_QUERY_CONTEXT, LEDGER_QUERY_CONTEXT, schemeContextLine } from "./version.js";
 import type { BalanceQueryPayload, CanonicalPayload } from "./types.js";
 
 /** ULID: Crockford base32, 26 chars, 128 bit (first char therefore 0–7). */
@@ -110,6 +110,31 @@ export function canonicalizeBalanceQuery(payload: BalanceQueryPayload): string {
 
   return [
     BALANCE_QUERY_CONTEXT,
+    `canonicalDomain: ${payload.canonicalDomain}`,
+    `network: ${payload.network}`,
+    `payer: ${payload.payer}`,
+    `requestId: ${payload.requestId}`,
+    `issuedAt: ${payload.issuedAt}`,
+  ].join("\n");
+}
+
+/**
+ * Canonical `v402-ledger-query/0.1` payload (spec § Ledger Statement
+ * Endpoint) — same fields as the balance query under its own context line.
+ * Pagination parameters (afterId/limit) are deliberately OUTSIDE the
+ * signature: they select what the AUTHENTICATED owner sees, never who may
+ * see it, and the requestId replay protection already binds each signature
+ * to a single use.
+ */
+export function canonicalizeLedgerQuery(payload: BalanceQueryPayload): string {
+  assertLineSafe("canonicalDomain", payload.canonicalDomain);
+  if (!NETWORK_RE.test(payload.network)) invalid("network", payload.network, "must be a lowercase network identifier");
+  assertIdentity("payer", payload.payer);
+  assertRequestId(payload.requestId);
+  assertUnixSeconds("issuedAt", payload.issuedAt);
+
+  return [
+    LEDGER_QUERY_CONTEXT,
     `canonicalDomain: ${payload.canonicalDomain}`,
     `network: ${payload.network}`,
     `payer: ${payload.payer}`,

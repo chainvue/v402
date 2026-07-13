@@ -51,6 +51,18 @@ describe("buildConfig", () => {
     expect(config.logging.level).toBe("debug");
   });
 
+  it("watcher minConfirmations/interval env overrides apply and stay validated", () => {
+    const config = buildConfig({
+      NODE_ENV: "test",
+      V402_WATCHER_MIN_CONF: "2",
+      V402_WATCHER_INTERVAL_MS: "500",
+    });
+    expect(config.watcher.minConfirmations).toBe(2);
+    expect(config.watcher.intervalMs).toBe(500);
+    // schema floor: min 1 confirmation — 0 must fail boot, not silently pass
+    expect(() => buildConfig({ NODE_ENV: "test", V402_WATCHER_MIN_CONF: "0" })).toThrow();
+  });
+
   it("supports programmatic overrides for tests", () => {
     const config = buildConfig({}, { db: { path: ":memory:" }, logging: { level: "silent" } });
     expect(config.db.path).toBe(":memory:");

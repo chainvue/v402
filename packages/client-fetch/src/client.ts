@@ -1,5 +1,6 @@
 import {
   canonicalizeBalanceQuery,
+  canonicalizeLedgerQuery,
   discoveryDocumentSchema,
   type DiscoveryDocument,
 } from "@chainvue/v402-protocol";
@@ -100,6 +101,49 @@ export class V402Client {
     const body = (await response.json()) as BalanceInfo & { error?: { code?: string; message?: string } };
     if (!response.ok) {
       throw new V402ClientError("facilitator-error", `balance query failed: ${body.error?.code ?? response.status}`, {
+        status: response.status,
+        ...(body.error !== undefined ? { error: body.error } : {}),
+      });
+    }
+    return body;
+  }
+
+  /**
+   * Signed ledger statement (domain-separated v402-ledger-query payload,
+   * replay-protected) — the identity's account history at the facilitator.
+   * Pagination via afterId/limit (outside the signature by design).
+   */
+  async getLedger(options: { afterId?: number; limit?: number } = {}): Promise<Record<string, unknown>> {
+    const discovery = (await this.discover()) as { canonicalDomain?: string; network?: string };
+    if (discovery.canonicalDomain === undefined || discovery.network === undefined) {
+      throw new V402ClientError("facilitator-error", "facilitator discovery lacks canonicalDomain/network");
+    }
+    const requestId = ulid();
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const signature = await this.options.signer.signMessage(
+      canonicalizeLedgerQuery({
+        canonicalDomain: discovery.canonicalDomain,
+        network: discovery.network,
+        payer: this.options.identity,
+        requestId,
+        issuedAt,
+      }),
+    );
+    const query = new URLSearchParams();
+    if (options.afterId !== undefined) query.set("afterId", String(options.afterId));
+    if (options.limit !== undefined) query.set("limit", String(options.limit));
+    const suffix = query.size > 0 ? `?${query.toString()}` : "";
+    const response = await this.fetchImpl(`${this.facilitatorBase}/v1/ledger${suffix}`, {
+      headers: {
+        "X-V402-Payer": this.options.identity,
+        "X-V402-Request-Id": requestId,
+        "X-V402-Issued-At": String(issuedAt),
+        "X-V402-Signature": signature,
+      },
+    });
+    const body = (await response.json()) as Record<string, unknown> & { error?: { code?: string } };
+    if (!response.ok) {
+      throw new V402ClientError("facilitator-error", `ledger query failed: ${body.error?.code ?? response.status}`, {
         status: response.status,
         ...(body.error !== undefined ? { error: body.error } : {}),
       });

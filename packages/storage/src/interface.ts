@@ -64,6 +64,12 @@ export interface IStorage {
   getSpentRequest(requestId: string): Promise<SpentRequestRecord | undefined>;
   /** Sum of currently reserved amounts for an identity — the balance endpoint's `reserved` figure. */
   sumReservedSats(identityId: string): Promise<bigint>;
+  /**
+   * Sum of DETECTED but not yet credited deposits for an identity
+   * (`credited_at` null, not reorged) — the balance endpoint's `pending`
+   * figure: money on the way while confirmations accumulate.
+   */
+  sumPendingDepositSats(identityId: string): Promise<bigint>;
   /** Replay-protected signed balance query — row with amount 0, immediately committed. */
   recordBalanceQuery(input: RecordBalanceQueryInput): Promise<RecordBalanceQueryResult>;
 
