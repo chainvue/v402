@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-protocol",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "v402 protocol core: types, wire-format schemas, canonical payload serialization, amount utilities. Framework-agnostic, browser-safe.",
   "repository": {
     "type": "git",

@@ -1,7 +1,7 @@
 {
   "name": "@chainvue/v402-verifier",
-  "version": "0.1.3",
-  "description": "Framework-agnostic verification core of v402: multi-scheme registry and the verus-prepaid-sig verifier (RPC mode) — amount pre-check, extension validation, bodyHash policy, timestamp window, two-phase debit against injected storage.",
+  "version": "0.1.4",
+  "description": "Framework-agnostic verification core of v402: multi-scheme registry and the verus-prepaid-sig verifier (RPC mode) \u2014 amount pre-check, extension validation, bodyHash policy, timestamp window, two-phase debit against injected storage.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/chainvue/v402.git",

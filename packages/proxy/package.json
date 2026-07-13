@@ -1,7 +1,7 @@
 {
   "name": "@chainvue/v402-proxy",
-  "version": "0.1.1",
-  "description": "v402 reverse proxy: a standalone payment guard in front of ANY origin (static site, WordPress, arbitrary API). Matches route rules, challenges with 402, verifies/reserves via a v402 facilitator (HTTP mode), streams paid requests through to the upstream — no origin changes required.",
+  "version": "0.1.2",
+  "description": "v402 reverse proxy: a standalone payment guard in front of ANY origin (static site, WordPress, arbitrary API). Matches route rules, challenges with 402, verifies/reserves via a v402 facilitator (HTTP mode), streams paid requests through to the upstream \u2014 no origin changes required.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/chainvue/v402.git",
