@@ -287,6 +287,52 @@ export function describeStorageContract(name: string, factory: () => Promise<ISt
         expect((await storage.listDepositsAtOrAbove(100)).map((d) => d.id).sort()).toEqual([low.id, high.id]);
       });
 
+      it("sums pending (detected, uncredited, unreorged) deposits per identity", async () => {
+        const pending = await storage.insertDeposit({ ...depositInput, txid: "pend-1", amountSats: 30_000n });
+        await storage.insertDeposit({ ...depositInput, txid: "pend-2", amountSats: 12_000n });
+        const credited = await storage.insertDeposit({ ...depositInput, txid: "cred-1", amountSats: 50_000n });
+        await storage.creditDeposit(credited.id, T0 + 1);
+        const reorged = await storage.insertDeposit({ ...depositInput, txid: "gone-1", amountSats: 9_000n });
+        await storage.markDepositReorged(reorged.id, T0 + 2);
+        await storage.insertDeposit({ ...depositInput, txid: "other-1", identityId: "other@", amountSats: 5_000n });
+
+        expect(await storage.sumPendingDepositSats("agent@")).toBe(42_000n); // 30k + 12k only
+        expect(await storage.sumPendingDepositSats("other@")).toBe(5_000n);
+        expect(await storage.sumPendingDepositSats("nobody@")).toBe(0n);
+        expect(pending.creditedAt).toBeUndefined();
+      });
+
+      it("insertAndCreditDeposit books insert + credit atomically with attribution", async () => {
+        const result = await storage.insertAndCreditDeposit(
+          { ...depositInput, txid: "mint-1", origin: "simulated", createdBy: "ops-alice", note: "case #42" },
+          T0 + 10,
+        );
+        expect(result.identityCreated).toBe(true);
+        expect(result.balanceAfterSats).toBe(50_000n);
+        expect(result.deposit.createdBy).toBe("ops-alice");
+        expect(result.deposit.note).toBe("case #42");
+        expect(result.deposit.creditedAt).toBe(T0 + 10);
+
+        // attribution survives the round-trip through the backend
+        const stored = await storage.getDeposit("mint-1", 0);
+        expect(stored?.createdBy).toBe("ops-alice");
+        expect(stored?.note).toBe("case #42");
+        expect(stored?.creditedAt).toBe(T0 + 10);
+
+        // no half-state: nothing pending, ledger consistent
+        expect(await storage.sumPendingDepositSats("agent@")).toBe(0n);
+        await expectLedgerInvariants("agent@");
+      });
+
+      it("insertAndCreditDeposit rejects duplicates without moving money", async () => {
+        await storage.insertAndCreditDeposit({ ...depositInput, txid: "mint-dup" }, T0 + 1);
+        await expect(
+          storage.insertAndCreditDeposit({ ...depositInput, txid: "mint-dup" }, T0 + 2),
+        ).rejects.toMatchObject({ name: "StorageError", code: "duplicate-deposit" });
+        expect((await storage.getIdentity("agent@"))?.balanceSats).toBe(50_000n);
+        await expectLedgerInvariants("agent@");
+      });
+
       it("sums credited deposits, optionally excluding simulated ones", async () => {
         const real = await storage.insertDeposit(depositInput);
         const simulated = await storage.insertDeposit({
@@ -299,6 +345,36 @@ export function describeStorageContract(name: string, factory: () => Promise<ISt
         await storage.creditDeposit(simulated.id, T0 + 2);
         expect(await storage.sumCreditedDeposits()).toBe(57_000n);
         expect(await storage.sumCreditedDeposits({ excludeSimulated: true })).toBe(50_000n);
+      });
+    });
+
+    describe("adversarial concurrency (in-process)", () => {
+      it("concurrent reserves summing over the balance: exactly one wins", async () => {
+        // Two in-flight reserves, each individually <= balance, together over
+        // it. Whatever the interleaving, exactly one may reserve — the other
+        // must see the post-debit balance and report insufficient.
+        await fund("agent@", 100_000n);
+        const results = await Promise.all([
+          storage.reservePayment(reserveInput("01CA", "agent@", 60_000n)),
+          storage.reservePayment(reserveInput("01CB", "agent@", 60_000n)),
+        ]);
+        const reserved = results.filter((r) => r.status === "reserved");
+        const insufficient = results.filter((r) => r.status === "insufficient");
+        expect(reserved).toHaveLength(1);
+        expect(insufficient).toHaveLength(1);
+        expect((await storage.getIdentity("agent@"))?.balanceSats).toBe(40_000n);
+        await expectLedgerInvariants("agent@");
+      });
+
+      it("hammering one identity with parallel reserves never over-debits", async () => {
+        await fund("agent@", 100_000n);
+        const results = await Promise.all(
+          Array.from({ length: 20 }, (_, i) => storage.reservePayment(reserveInput(`01H${i}`, "agent@", 30_000n))),
+        );
+        const wins = results.filter((r) => r.status === "reserved").length;
+        expect(wins).toBe(3); // 3 × 30k fits in 100k, a 4th must not
+        expect((await storage.getIdentity("agent@"))?.balanceSats).toBe(10_000n);
+        await expectLedgerInvariants("agent@");
       });
     });
 

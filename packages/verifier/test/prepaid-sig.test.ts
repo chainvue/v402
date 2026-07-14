@@ -356,6 +356,20 @@ describe("verifyAndReserve — signature + reserve outcomes", () => {
     });
   });
 
+  it("replay is short-circuited BEFORE the signature RPC (no amplification)", async () => {
+    const { verifier, rpc } = await setup({ balanceSats: 200_000n });
+    await verifier.verifyAndReserve(requestFor(), POLICY);
+    const rpcCallsAfterFirst = rpc.calls.filter((c) => c.method === "verifyMessage").length;
+    expect(rpcCallsAfterFirst).toBe(1);
+
+    // ten replays of the same captured request must not cost a single further RPC
+    for (let i = 0; i < 10; i++) {
+      const replayed = await verifier.verifyAndReserve(requestFor(), POLICY);
+      expect(!replayed.ok && replayed.error).toMatchObject({ httpStatus: 409, code: "replay" });
+    }
+    expect(rpc.calls.filter((c) => c.method === "verifyMessage").length).toBe(rpcCallsAfterFirst);
+  });
+
   it("insufficient balance → 402 with balance + deposit hint", async () => {
     const { verifier } = await setup({ balanceSats: 10_000n });
     const result = await verifier.verifyAndReserve(requestFor(), POLICY);

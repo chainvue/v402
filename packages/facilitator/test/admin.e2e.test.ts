@@ -62,7 +62,7 @@ describe("admin endpoints (e2e, simulated watcher)", () => {
   describe("POST /admin/simulate-deposit", () => {
     it("credits a fake deposit instantly with normalized identity", async () => {
       const response = await authed("/admin/simulate-deposit")
-        .send({ identity: "v402.DemoAgent@", amount: "0.005" })
+        .send({ identity: "v402.DemoAgent@", amount: "0.005", operator: "ops-alice" })
         .expect(201);
       expect(response.body).toMatchObject({
         ok: true,
@@ -74,23 +74,23 @@ describe("admin endpoints (e2e, simulated watcher)", () => {
     });
 
     it("409s duplicate txids", async () => {
-      await authed("/admin/simulate-deposit").send({ identity: "a@", amount: "1", txid: "sim-dup" }).expect(201);
+      await authed("/admin/simulate-deposit").send({ identity: "a@", amount: "1", operator: "ops-alice", txid: "sim-dup" }).expect(201);
       const response = await authed("/admin/simulate-deposit")
-        .send({ identity: "a@", amount: "1", txid: "sim-dup" })
+        .send({ identity: "a@", amount: "1", operator: "ops-alice", txid: "sim-dup" })
         .expect(409);
       expect(response.body.error.code).toBe("duplicate-deposit");
     });
 
     it("400s invalid bodies", async () => {
-      await authed("/admin/simulate-deposit").send({ identity: "no-at", amount: "1" }).expect(400);
-      await authed("/admin/simulate-deposit").send({ identity: "a@", amount: "1,5" }).expect(400);
+      await authed("/admin/simulate-deposit").send({ identity: "no-at", amount: "1", operator: "ops-alice" }).expect(400);
+      await authed("/admin/simulate-deposit").send({ identity: "a@", amount: "1,5", operator: "ops-alice" }).expect(400);
     });
   });
 
   describe("POST /admin/credit", () => {
     it("credits manually with a full ledger trail (origin simulated, excluded from crosscheck)", async () => {
       const response = await authed("/admin/credit")
-        .send({ identity: "Support.Case@", amount: "0.001", note: "missed deposit #42" })
+        .send({ identity: "Support.Case@", amount: "0.001", operator: "ops-bob", note: "missed deposit #42" })
         .expect(201);
       expect(response.body).toMatchObject({ ok: true, identity: "support.case@", balanceAfterSats: "100000" });
       const summary = await storage.getLedgerSummary("support.case@");
@@ -123,9 +123,51 @@ describe("admin endpoints (e2e, real watcher)", () => {
       const response = await request(app.getHttpServer())
         .post("/admin/simulate-deposit")
         .auth(ADMIN_TOKEN, { type: "bearer" })
-        .send({ identity: "a@", amount: "1" })
+        .send({ identity: "a@", amount: "1", operator: "ops-alice" })
         .expect(409);
       expect(response.body.error.code).toBe("not-simulated");
+    } finally {
+      await app.close();
+    }
+  });
+});
+
+describe("admin endpoints (e2e, admin API disabled)", () => {
+  // Fail-closed: with no V402_ADMIN_TOKEN configured the admin API must be
+  // unusable even with a (bogus) bearer token — the balance-minting endpoints
+  // must never be reachable by default.
+  async function bootDisabled(): Promise<INestApplication> {
+    const config = buildConfig(
+      { NODE_ENV: "test" }, // no V402_ADMIN_TOKEN → adminToken defaults to ""
+      {
+        db: { path: ":memory:" },
+        logging: { level: "silent" },
+        watcher: { mode: "simulated", intervalMs: 100_000 },
+      },
+    );
+    const rpc = new MockVerusRpc({ getCurrencyBalance: async () => ({ VRSCTEST: 0 }) });
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule.forRoot(config)] })
+      .overrideProvider(VERUS_RPC)
+      .useValue(rpc)
+      .compile();
+    const app = moduleRef.createNestApplication();
+    await app.init();
+    return app;
+  }
+
+  it("returns 401 for /admin/credit even with a bearer token", async () => {
+    const app = await bootDisabled();
+    try {
+      await request(app.getHttpServer())
+        .post("/admin/credit")
+        .auth("any-token", { type: "bearer" })
+        .send({ identity: "a@", amount: "1", operator: "ops" })
+        .expect(401);
+      // and without any token
+      await request(app.getHttpServer())
+        .post("/admin/simulate-deposit")
+        .send({ identity: "a@", amount: "1", operator: "ops" })
+        .expect(401);
     } finally {
       await app.close();
     }

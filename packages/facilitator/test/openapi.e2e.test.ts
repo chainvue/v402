@@ -285,14 +285,14 @@ describe("OpenAPI document matches the implementation (e2e)", () => {
     const simulated = await request(server())
       .post("/admin/simulate-deposit")
       .auth(ADMIN_TOKEN, { type: "bearer" })
-      .send({ identity: PAYER, amount: "1" })
+      .send({ identity: PAYER, amount: "1", operator: "openapi-test-op" })
       .expect(201);
     expectDocumented("/admin/simulate-deposit", "post", 201, simulated.body);
 
     const credited = await request(server())
       .post("/admin/credit")
       .auth(ADMIN_TOKEN, { type: "bearer" })
-      .send({ identity: PAYER, amount: "0.5", note: "openapi-test" })
+      .send({ identity: PAYER, amount: "0.5", operator: "openapi-test-op", note: "openapi-test" })
       .expect(201);
     expectDocumented("/admin/credit", "post", 201, credited.body);
 

@@ -76,7 +76,7 @@ async function main(): Promise<void> {
     const credited = await json(`${FACILITATOR}/admin/simulate-deposit`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${ADMIN_TOKEN}` },
-      body: JSON.stringify({ identity: PAYER, amount: DEPOSIT_AMOUNT }),
+      body: JSON.stringify({ identity: PAYER, amount: DEPOSIT_AMOUNT, operator: "smoke-test" }),
     });
     assertEqual(credited.status, 201, "simulate-deposit");
     log(`simulated deposit credited (balance ${satsToHuman(BigInt(credited.body.balanceAfterSats))})`);
