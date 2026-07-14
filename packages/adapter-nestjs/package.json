@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-nestjs",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "NestJS adapter for v402: PaymentGuard + PaymentInterceptor (two-phase debit), @V402Payment route decorator, V402Module with in-process or facilitator-HTTP verification.",
   "repository": {
     "type": "git",

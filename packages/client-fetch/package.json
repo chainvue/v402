@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-client-fetch",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "v402 client for AI agents and services: wrapFetchWithPayment (transparent 402 handshake) and V402Client (balance, topup, discovery). Parallel-safe ULIDs, normative M5 retry semantics, automatic price-mismatch recovery.",
   "repository": {
     "type": "git",
