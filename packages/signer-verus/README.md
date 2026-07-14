@@ -1,28 +1,31 @@
 # @chainvue/v402-signer-verus
 
-Signer implementations for [v402](https://github.com/chainvue/v402) clients:
-
-- `NodeSigner` — delegates to a Verus daemon's `signmessage` (wallet holds the key)
-- `EnvSigner` / `FileSigner` — local WIF signing (@noble/curves), byte-compatible
-  with verusd address signatures and validated against the reference test vectors;
-  `FileSigner` enforces key-file mode `0600`
-
-Both address signatures and **VerusID identity signatures** are supported. The
-identity path implements the daemon's actual digest
-(`verusIdentitySignDigest`: chain ID + block height + identity ID bound into
-the signed hash — see
-[`spec/0.1/prepaid-sig-scheme.md`](https://github.com/chainvue/v402/blob/main/spec/0.1/prepaid-sig-scheme.md))
-and the `CIdentitySignature` envelope, verified live against verusd.
+Signer implementations for [v402](https://github.com/chainvue/v402) clients: local WIF signing (`EnvSigner`, `FileSigner`) and Verus-daemon signing (`NodeSigner`). Supports both address and **VerusID identity** signatures — byte-compatible with verusd and validated against the reference test vectors.
 
 ```sh
 npm install @chainvue/v402-signer-verus
 ```
 
-Notes: identity-mode local signing needs the identity's i-address and the chain
-i-address (resolve once via `getidentity`). Local signatures are deterministic
-(RFC 6979, `extraEntropy: false`) but not byte-equal to daemon signatures —
-verusd uses a non-standard nonce variant; verification is recovery-based, so
-this is irrelevant for validity.
+```ts
+import { EnvSigner } from "@chainvue/v402-signer-verus";
+
+// WIF from $VERUS_SIGNING_KEY; pass { identity, heightProvider } for VerusID signing
+const signer = new EnvSigner();
+const signature = await signer.signMessage(canonicalString);
+```
+
+## Signers
+
+- `EnvSigner` — WIF from an env var (12-factor / secret-manager friendly)
+- `FileSigner` — WIF from a key file; refuses group/world-accessible files (mode must be `0600`)
+- `NodeSigner` — delegates to a Verus daemon's `signmessage` (wallet holds the key)
+
+All implement `Signer.signMessage(message): Promise<string>` — Base64 that `verifymessage` accepts.
+
+## Good to know
+
+- Identity-mode signing needs the identity's i-address, the chain i-address, and a `heightProvider` (the digest binds chain, height, and identity — resolve the addresses once via `getidentity`). Without `identity`, signatures verify against the R-address only, not a `…@` name.
+- Local signatures are deterministic (RFC 6979) but not byte-equal to verusd's non-standard nonce variant; verification is recovery-based, so validity is unaffected.
 
 ## License
 
