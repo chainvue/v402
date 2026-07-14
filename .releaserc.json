@@ -12,13 +12,8 @@
       ]
     }],
     ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
-    ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
     ["@semantic-release/npm", { "npmPublish": false }],
     ["@semantic-release/exec", { "publishCmd": "pnpm publish --no-git-checks" }],
-    ["@semantic-release/git", {
-      "assets": ["package.json", "CHANGELOG.md"],
-      "message": "chore(release): ${nextRelease.gitTag} [skip ci]\n\n${nextRelease.notes}"
-    }],
     ["@semantic-release/github", { "successComment": false, "failComment": false, "releasedLabels": false }]
   ]
 }

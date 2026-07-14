@@ -4,11 +4,19 @@
 # which runs semantic-release per package. For each package it analyzes the
 # commits that touched it since the package's last `<name>@<version>` tag and,
 # if releasable (feat → minor, fix → patch; a BREAKING change stays 0.x → minor
-# per .releaserc.json releaseRules), computes the next version, updates that
-# package's package.json + CHANGELOG.md, publishes, tags, and creates a GitHub
-# release. Dependent packages get a patch bump to pick up the new dependency
-# versions. Private packages (apps/demo-server) are skipped. No releasable
-# commits → no-op. Preview with the workflow_dispatch dry-run.
+# per .releaserc.json releaseRules), computes the next version, publishes to
+# npm, pushes the `<name>@<version>` tag, and creates a GitHub release whose
+# notes ARE the changelog. Dependent packages get a patch bump to pick up the
+# new dependency versions. Private packages (apps/demo-server) are skipped.
+# No releasable commits → no-op. Preview with the workflow_dispatch dry-run.
+#
+# NOTE: no @semantic-release/git — multi-semantic-release runs packages
+# CONCURRENTLY (Promise.all), so committing per-package version bumps back to
+# main would race (9 non-fast-forward pushes to one branch). Instead: version
+# bumps are ephemeral (in-CI, for the publish only), baselines advance via the
+# per-package tags (separate refs never conflict), and the changelog lives in
+# each GitHub release. The repo's package.json versions are therefore not
+# auto-updated — the source of truth for "what's released" is the tags + npm.
 #
 # Publish: semantic-release owns versioning only; the actual publish is the
 # proven OIDC `pnpm publish` (exec plugin), per package — @semantic-release/npm

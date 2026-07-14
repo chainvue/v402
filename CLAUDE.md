@@ -37,12 +37,14 @@ are additive and run on startup.
 ## Releases — automated, do not hand-roll
 Conventional Commits drive **multi-semantic-release** (each package versions
 independently from the files a commit touches; dependents get a patch bump).
-**Never hand-bump `version` fields or edit the per-package `CHANGELOG.md`** —
-the pipeline derives both from commits. Scope commits so the right package
-releases (e.g. `fix(verifier): …`). Versioning stays **0.x**: a breaking change
-bumps the MINOR (releaseRules in `.releaserc.json`); still mark it `!` /
-`BREAKING CHANGE:` so it's recorded. Do not `git push`, tag, or publish without
-an explicit ask.
+Scope commits so the right package releases (e.g. `fix(verifier): …`).
+Versioning stays **0.x**: a breaking change bumps the MINOR (releaseRules in
+`.releaserc.json`); still mark it `!` / `BREAKING CHANGE:` so it's recorded.
+Releases publish to npm + push a `<name>@<version>` tag + a GitHub release whose
+notes are the changelog — there is **no push-back to the repo** (packages run
+concurrently, so committing bumps would race), so the repo's `package.json`
+versions are NOT the source of truth; the tags + npm are. Do not `git push`,
+tag, or publish without an explicit ask.
 
 ## Decision log
 `docs/RISKS.md` = maintainer-facing "why"; `CHANGELOG.md` = adopter-facing.
