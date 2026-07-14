@@ -1,8 +1,18 @@
 # Changelog
 
-Per-package versions; the release workflow publishes any package whose version
-is not yet on the registry. Data/spec packages (`test-vectors`, the protocol
-spec) are versioned separately.
+Format follows [Keep a Changelog](https://keepachangelog.com): newest first.
+Because packages version independently, each release section is headed by date
+and theme (`## <date> — <theme>`) with a `### <package> <old> → <new>`
+subsection per changed package; the release workflow publishes any package
+whose version is not yet on the registry. Record changes under **[Unreleased]**
+as you make them. Data/spec packages (`test-vectors`, the protocol spec) are
+versioned separately. This file is adopter-facing ("what changed, what breaks")
+— design rationale lives in `docs/RISKS.md`.
+
+## [Unreleased]
+
+<!-- Add entries here in the same commit as the change; move them under a dated
+     release heading with per-package version subsections at release time. -->
 
 ## 2026-07-14 — custody hardening
 
