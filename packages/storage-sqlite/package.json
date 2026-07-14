@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-storage-sqlite",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SQLite (WAL) implementation of the v402 storage interface \u2014 Drizzle schema, embedded migrations, BEGIN IMMEDIATE write transactions, append-only ledger.",
   "repository": {
     "type": "git",

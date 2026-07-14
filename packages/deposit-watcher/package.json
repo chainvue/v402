@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-deposit-watcher",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Deposit watcher for the v402 facilitator: real mode (block polling, reorg detection, sender-VerusID attribution, confirmation crediting, re-mine handling) and simulated mode for dev/CI without a Verus node.",
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 {
   "name": "@chainvue/v402-storage",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Storage interface for the v402 facilitator (identities, deposits, spent requests, append-only ledger, blocklist, watcher cursor, reconciliation) plus an in-memory reference implementation for tests.",
   "repository": {
     "type": "git",
