@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "v402 — Verus-native payment layer for AI-agent APIs. Monorepo root: spec (CC-BY-4.0) + reference implementation (Apache-2.0).",
+  "description": "v402 \u2014 Verus-native payment layer for AI-agent APIs. Monorepo root: spec (CC-BY-4.0) + reference implementation (Apache-2.0).",
   "license": "Apache-2.0",
   "author": "Robert Lech",
   "packageManager": "pnpm@10.34.5",
@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "generate:vectors": "pnpm --filter @chainvue/v402-protocol build && node scripts/generate-vectors.ts",
-    "smoke": "node scripts/e2e-smoke.ts"
+    "smoke": "node scripts/e2e-smoke.ts",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@chainvue/v402-client-fetch": "workspace:*",
@@ -26,6 +27,7 @@
     "@chainvue/v402-signer-verus": "workspace:*",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.7.0",
     "globals": "^17.7.0",
     "typescript": "^5.9.3",

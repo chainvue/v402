@@ -8,7 +8,12 @@
 #   through their published entry points (`dist/`), so a fresh checkout has
 #   nothing to typecheck or test against until `pnpm build` has run.
 # - Integration suites gated behind VERUS_RPC_URL skip automatically — CI has
-#   no Verus node. Vector parity runs as part of the normal suite.
+#   no Verus node. The real-RPC signature path (verifymessage) therefore CANNOT
+#   run in CI without a verusd; it is exercised only in local/staging with
+#   VERUS_RPC_* set. Vector parity runs as part of the normal suite.
+# - Node matrix covers the `engines.node` floor (22) and a current release
+#   (26); the cross-process SQLite serialization test needs a real Node
+#   subprocess and runs on both.
 name: CI
 
 on:
@@ -24,6 +29,10 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 26]
     steps:
       - uses: actions/checkout@v5
 
@@ -31,7 +40,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 26
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - name: Install
@@ -46,5 +55,43 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm test
+      - name: Test (with coverage threshold)
+        run: pnpm test:coverage
+
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Fail on known-vulnerable dependencies (custody service — supply chain
+      # is in scope). Moderate+ only, to avoid noise from low-severity advisories
+      # in dev-only tooling; raise to `low` once the tree is clean.
+      - name: Audit dependencies
+        run: pnpm audit --audit-level moderate --prod
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Scan the full history for committed secrets (admin tokens, WIFs, RPC
+      # credentials). Runs on PRs and pushes; the action fails the job on a
+      # verified finding.
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
