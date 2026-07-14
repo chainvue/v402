@@ -6,6 +6,7 @@ import {
   type CreditDepositResult,
   type DepositRecord,
   type IdentityRecord,
+  type InsertAndCreditResult,
   type InsertDepositInput,
   type LateCommitResult,
   type LedgerEntry,
@@ -78,6 +79,27 @@ export class InMemoryStorage implements IStorage {
     this.ledger.push(entry);
   }
 
+  /**
+   * O(1) solvency invariant, checked after every balance mutation: the
+   * identity's balance must equal the balance_after of its latest ledger row.
+   * A violation means a balance moved without its ledger row (or vice versa)
+   * — fail loudly at mutation time instead of at the reconciliation cron.
+   */
+  private assertBalanceInvariant(identityId: string): void {
+    const identity = this.identities.get(identityId);
+    if (!identity) return;
+    for (let i = this.ledger.length - 1; i >= 0; i--) {
+      const entry = this.ledger[i]!;
+      if (entry.identityId !== identityId) continue;
+      if (entry.balanceAfterSats !== identity.balanceSats) {
+        throw new Error(
+          `solvency invariant violated for ${identityId}: balance ${identity.balanceSats} != latest ledger balance_after ${entry.balanceAfterSats}`,
+        );
+      }
+      return;
+    }
+  }
+
   // ── Identities ──────────────────────────────────────────────────────────
 
   async getIdentity(identityId: string): Promise<IdentityRecord | undefined> {
@@ -112,6 +134,7 @@ export class InMemoryStorage implements IStorage {
       this.spentRequests.set(row.requestId, row);
       return { status: "unknown-identity" };
     }
+    this.assertBalanceInvariant(input.identityId);
     identity.lastRequestAt = input.receivedAt;
     if (identity.balanceSats < input.amountSats) {
       row.status = "insufficient";
@@ -124,6 +147,7 @@ export class InMemoryStorage implements IStorage {
     this.appendLedger(input.identityId, "debit", "reserve", -input.amountSats, identity.balanceSats, input.receivedAt, {
       requestId: input.requestId,
     });
+    this.assertBalanceInvariant(input.identityId);
     return { status: "reserved", balanceAfterSats: identity.balanceSats };
   }
 
@@ -140,9 +164,11 @@ export class InMemoryStorage implements IStorage {
     if (!row || row.status !== "reserved") return { ok: false, currentStatus: row?.status };
     const identity = this.identities.get(row.identityId);
     if (!identity) return { ok: false, currentStatus: row.status };
+    this.assertBalanceInvariant(row.identityId);
     row.status = "error";
     identity.balanceSats += row.amountSats;
     this.appendLedger(row.identityId, "refund", "rollback", row.amountSats, identity.balanceSats, at, { requestId });
+    this.assertBalanceInvariant(row.identityId);
     return { ok: true };
   }
 
@@ -151,10 +177,12 @@ export class InMemoryStorage implements IStorage {
     if (!row || row.status !== "error") return { ok: false, currentStatus: row?.status };
     const identity = this.identities.get(row.identityId);
     if (!identity) return { ok: false, currentStatus: row.status };
+    this.assertBalanceInvariant(row.identityId);
     row.status = "committed";
     row.responseBytes = responseBytes;
     identity.balanceSats -= row.amountSats;
     this.appendLedger(row.identityId, "debit", "late_commit", -row.amountSats, identity.balanceSats, at, { requestId });
+    this.assertBalanceInvariant(row.identityId);
     return { ok: true, balanceAfterSats: identity.balanceSats };
   }
 
@@ -164,11 +192,13 @@ export class InMemoryStorage implements IStorage {
       if (row.status !== "reserved" || row.receivedAt >= cutoffReceivedAt) continue;
       const identity = this.identities.get(row.identityId);
       if (!identity) continue;
+      this.assertBalanceInvariant(row.identityId);
       row.status = "error";
       identity.balanceSats += row.amountSats;
       this.appendLedger(row.identityId, "refund", "reaper_expired", row.amountSats, identity.balanceSats, at, {
         requestId: row.requestId,
       });
+      this.assertBalanceInvariant(row.identityId);
       reaped.push(row.requestId);
     }
     return reaped;
@@ -283,6 +313,7 @@ export class InMemoryStorage implements IStorage {
     if (deposit.reorgedAt !== undefined) return { ok: false, reason: "reorged" };
     if (deposit.creditedAt !== undefined) return { ok: false, reason: "already-credited" };
 
+    if (this.identities.has(deposit.identityId)) this.assertBalanceInvariant(deposit.identityId);
     deposit.creditedAt = creditedAt;
     let identity = this.identities.get(deposit.identityId);
     const identityCreated = identity === undefined;
@@ -296,7 +327,30 @@ export class InMemoryStorage implements IStorage {
     this.appendLedger(deposit.identityId, "deposit", "deposit_credited", deposit.amountSats, identity.balanceSats, creditedAt, {
       depositId: deposit.id,
     });
+    this.assertBalanceInvariant(deposit.identityId);
     return { ok: true, balanceAfterSats: identity.balanceSats, identityCreated };
+  }
+
+  async insertAndCreditDeposit(input: InsertDepositInput, creditedAt: number): Promise<InsertAndCreditResult> {
+    // Synchronous body → atomic under JS single-threading, matching the
+    // one-transaction contract of the SQLite backend.
+    const key = this.depositKey(input.txid, input.vout);
+    if (this.depositsByKey.has(key)) {
+      throw new StorageError("duplicate-deposit", `deposit ${key} already exists — use remineDeposit for re-mines`);
+    }
+    const deposit: DepositRecord = { id: this.nextDepositId++, ...input };
+    this.depositsByKey.set(key, deposit);
+    const credited = await this.creditDeposit(deposit.id, creditedAt);
+    if (!credited.ok) {
+      // cannot happen for a row inserted in the same tick; keep atomicity anyway
+      this.depositsByKey.delete(key);
+      throw new Error(`insertAndCreditDeposit: credit failed: ${credited.reason}`);
+    }
+    return {
+      deposit: { ...deposit },
+      balanceAfterSats: credited.balanceAfterSats,
+      identityCreated: credited.identityCreated,
+    };
   }
 
   async markDepositReorged(id: number, reorgedAt: number): Promise<MarkReorgedResult> {
@@ -310,10 +364,12 @@ export class InMemoryStorage implements IStorage {
 
     const identity = this.identities.get(deposit.identityId);
     if (!identity) return { ok: true, wasCredited: false };
+    this.assertBalanceInvariant(deposit.identityId);
     identity.balanceSats -= deposit.amountSats;
     this.appendLedger(deposit.identityId, "reorg_adjust", "reorg", -deposit.amountSats, identity.balanceSats, reorgedAt, {
       depositId: deposit.id,
     });
+    this.assertBalanceInvariant(deposit.identityId);
     return { ok: true, wasCredited: true, balanceAfterSats: identity.balanceSats };
   }
 

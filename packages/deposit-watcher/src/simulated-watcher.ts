@@ -17,6 +17,10 @@ export interface SimulateDepositInput {
   identity: string;
   amountSats: bigint;
   txid?: string;
+  /** Operator attribution — who injected this deposit. */
+  createdBy?: string;
+  /** Free-text operator note. */
+  note?: string;
 }
 
 /**
@@ -52,25 +56,28 @@ export class SimulatedDepositWatcher implements IWatcher {
     this.now = deps.now ?? (() => Math.floor(Date.now() / 1000));
   }
 
-  /** Insert + immediately credit a fake deposit. Returns the deposit row and the new balance. */
+  /** Insert + credit a fake deposit in one storage transaction. Returns the deposit row and the new balance. */
   async simulateDeposit(input: SimulateDepositInput): Promise<{ deposit: DepositRecord; balanceAfterSats: bigint }> {
     const txid = input.txid ?? `sim-${randomUUID()}`;
     const blockHeight = this.blockCounter++;
-    const deposit = await this.storage.insertDeposit({
-      identityId: normalizeIdentityKey(input.identity),
-      amountSats: input.amountSats,
-      currency: this.config.currency,
-      txid,
-      vout: 0,
-      blockHeight,
-      blockHash: `sim-${blockHeight}`,
-      confirmations: this.config.minConfirmations,
-      detectedAt: this.now(),
-      origin: "simulated",
-    });
-    const credited = await this.storage.creditDeposit(deposit.id, this.now());
-    if (!credited.ok) throw new Error(`simulated deposit could not be credited: ${credited.reason}`);
-    return { deposit, balanceAfterSats: credited.balanceAfterSats };
+    const result = await this.storage.insertAndCreditDeposit(
+      {
+        identityId: normalizeIdentityKey(input.identity),
+        amountSats: input.amountSats,
+        currency: this.config.currency,
+        txid,
+        vout: 0,
+        blockHeight,
+        blockHash: `sim-${blockHeight}`,
+        confirmations: this.config.minConfirmations,
+        detectedAt: this.now(),
+        origin: "simulated",
+        ...(input.createdBy !== undefined ? { createdBy: input.createdBy } : {}),
+        ...(input.note !== undefined ? { note: input.note } : {}),
+      },
+      this.now(),
+    );
+    return { deposit: result.deposit, balanceAfterSats: result.balanceAfterSats };
   }
 
   start(): void {

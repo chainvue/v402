@@ -14,6 +14,7 @@ import {
   type DepositRecord,
   type IStorage,
   type IdentityRecord,
+  type InsertAndCreditResult,
   type InsertDepositInput,
   type LateCommitResult,
   type LedgerEntry,
@@ -123,6 +124,33 @@ export class SqliteStorage implements IStorage {
       .run();
   }
 
+  /**
+   * O(1) solvency invariant: the identity's balance must equal the
+   * balance_after of its latest ledger row. Checked at the ENTRY of every
+   * balance-mutating transaction (drift introduced since the last write —
+   * by a buggy op or external corruption — fails the next mutation) and
+   * again before it commits (an op that moves balance without its ledger
+   * row fails immediately and rolls back). The full balance == Σledger
+   * check remains the reconciliation cron's job.
+   */
+  private assertBalanceInvariant(tx: Tx, identityId: string): void {
+    const identityRow = tx.select().from(identities).where(eq(identities.identityId, identityId)).get();
+    if (!identityRow) return;
+    const last = tx
+      .select({ balanceAfter: ledgerEntries.balanceAfter })
+      .from(ledgerEntries)
+      .where(eq(ledgerEntries.identityId, identityId))
+      .orderBy(desc(ledgerEntries.id))
+      .limit(1)
+      .get();
+    if (last === undefined) return;
+    if (BigInt(last.balanceAfter) !== BigInt(identityRow.balance)) {
+      throw new Error(
+        `solvency invariant violated for ${identityId}: balance ${identityRow.balance} != latest ledger balance_after ${last.balanceAfter}`,
+      );
+    }
+  }
+
   // ── Row mapping ─────────────────────────────────────────────────────────
 
   private mapIdentity(row: typeof identities.$inferSelect): IdentityRecord {
@@ -167,6 +195,8 @@ export class SqliteStorage implements IStorage {
     };
     if (row.creditedAt !== null) record.creditedAt = row.creditedAt;
     if (row.reorgedAt !== null) record.reorgedAt = row.reorgedAt;
+    if (row.createdBy !== null) record.createdBy = row.createdBy;
+    if (row.note !== null) record.note = row.note;
     return record;
   }
 
@@ -228,6 +258,7 @@ export class SqliteStorage implements IStorage {
           insertRow("insufficient");
           return { status: "unknown-identity" };
         }
+        this.assertBalanceInvariant(tx, input.identityId);
 
         const balance = BigInt(identityRow.balance);
         if (balance < input.amountSats) {
@@ -248,6 +279,7 @@ export class SqliteStorage implements IStorage {
         this.appendLedger(tx, input.identityId, "debit", "reserve", -input.amountSats, balanceAfter, input.receivedAt, {
           requestId: input.requestId,
         });
+        this.assertBalanceInvariant(tx, input.identityId);
         return { status: "reserved", balanceAfterSats: balanceAfter };
       });
     } catch (err) {
@@ -282,6 +314,7 @@ export class SqliteStorage implements IStorage {
       }
       const identityRow = tx.select().from(identities).where(eq(identities.identityId, row.identityId)).get();
       if (!identityRow) return { ok: false, currentStatus: row.status as SpentRequestStatus };
+      this.assertBalanceInvariant(tx, row.identityId);
 
       const balanceAfter = BigInt(identityRow.balance) + BigInt(row.amount);
       tx.update(spentRequests).set({ status: "error" }).where(eq(spentRequests.requestId, requestId)).run();
@@ -290,6 +323,7 @@ export class SqliteStorage implements IStorage {
         .where(eq(identities.identityId, row.identityId))
         .run();
       this.appendLedger(tx, row.identityId, "refund", "rollback", BigInt(row.amount), balanceAfter, at, { requestId });
+      this.assertBalanceInvariant(tx, row.identityId);
       return { ok: true };
     });
   }
@@ -302,6 +336,7 @@ export class SqliteStorage implements IStorage {
       }
       const identityRow = tx.select().from(identities).where(eq(identities.identityId, row.identityId)).get();
       if (!identityRow) return { ok: false, currentStatus: row.status as SpentRequestStatus };
+      this.assertBalanceInvariant(tx, row.identityId);
 
       const balanceAfter = BigInt(identityRow.balance) - BigInt(row.amount);
       tx.update(spentRequests).set({ status: "committed", responseBytes }).where(eq(spentRequests.requestId, requestId)).run();
@@ -310,6 +345,7 @@ export class SqliteStorage implements IStorage {
         .where(eq(identities.identityId, row.identityId))
         .run();
       this.appendLedger(tx, row.identityId, "debit", "late_commit", -BigInt(row.amount), balanceAfter, at, { requestId });
+      this.assertBalanceInvariant(tx, row.identityId);
       return { ok: true, balanceAfterSats: balanceAfter };
     });
   }
@@ -325,6 +361,7 @@ export class SqliteStorage implements IStorage {
       for (const row of expired) {
         const identityRow = tx.select().from(identities).where(eq(identities.identityId, row.identityId)).get();
         if (!identityRow) continue;
+        this.assertBalanceInvariant(tx, row.identityId);
         const balanceAfter = BigInt(identityRow.balance) + BigInt(row.amount);
         tx.update(spentRequests).set({ status: "error" }).where(eq(spentRequests.requestId, row.requestId)).run();
         tx.update(identities)
@@ -334,6 +371,7 @@ export class SqliteStorage implements IStorage {
         this.appendLedger(tx, row.identityId, "refund", "reaper_expired", BigInt(row.amount), balanceAfter, at, {
           requestId: row.requestId,
         });
+        this.assertBalanceInvariant(tx, row.identityId);
         reaped.push(row.requestId);
       }
       return reaped;
@@ -418,6 +456,8 @@ export class SqliteStorage implements IStorage {
           confirmations: input.confirmations,
           detectedAt: input.detectedAt,
           origin: input.origin,
+          createdBy: input.createdBy ?? null,
+          note: input.note ?? null,
         })
         .returning()
         .get();
@@ -484,44 +524,92 @@ export class SqliteStorage implements IStorage {
       .map((row) => this.mapDeposit(row));
   }
 
-  async creditDeposit(id: number, creditedAt: number): Promise<CreditDepositResult> {
-    return this.writeTx((tx): CreditDepositResult => {
-      const row = tx.select().from(deposits).where(eq(deposits.id, id)).get();
-      if (!row) return { ok: false, reason: "not-found" };
-      if (row.reorgedAt !== null) return { ok: false, reason: "reorged" };
-      if (row.creditedAt !== null) return { ok: false, reason: "already-credited" };
+  private creditDepositInTx(tx: Tx, id: number, creditedAt: number): CreditDepositResult {
+    const row = tx.select().from(deposits).where(eq(deposits.id, id)).get();
+    if (!row) return { ok: false, reason: "not-found" };
+    if (row.reorgedAt !== null) return { ok: false, reason: "reorged" };
+    if (row.creditedAt !== null) return { ok: false, reason: "already-credited" };
 
-      tx.update(deposits).set({ creditedAt }).where(eq(deposits.id, id)).run();
+    tx.update(deposits).set({ creditedAt }).where(eq(deposits.id, id)).run();
 
-      const amount = BigInt(row.amount);
-      const identityRow = tx.select().from(identities).where(eq(identities.identityId, row.identityId)).get();
-      let balanceAfter: bigint;
-      const identityCreated = !identityRow;
-      if (!identityRow) {
-        balanceAfter = amount;
-        tx.insert(identities)
-          .values({
-            identityId: row.identityId,
-            balance: balanceAfter.toString(),
-            createdAt: creditedAt,
-            firstDepositAt: creditedAt,
-          })
-          .run();
-      } else {
-        balanceAfter = BigInt(identityRow.balance) + amount;
-        tx.update(identities)
-          .set({
-            balance: balanceAfter.toString(),
-            firstDepositAt: identityRow.firstDepositAt ?? creditedAt,
-          })
-          .where(eq(identities.identityId, row.identityId))
-          .run();
-      }
-      this.appendLedger(tx, row.identityId, "deposit", "deposit_credited", amount, balanceAfter, creditedAt, {
-        depositId: id,
-      });
-      return { ok: true, balanceAfterSats: balanceAfter, identityCreated };
+    const amount = BigInt(row.amount);
+    const identityRow = tx.select().from(identities).where(eq(identities.identityId, row.identityId)).get();
+    if (identityRow) this.assertBalanceInvariant(tx, row.identityId);
+    let balanceAfter: bigint;
+    const identityCreated = !identityRow;
+    if (!identityRow) {
+      balanceAfter = amount;
+      tx.insert(identities)
+        .values({
+          identityId: row.identityId,
+          balance: balanceAfter.toString(),
+          createdAt: creditedAt,
+          firstDepositAt: creditedAt,
+        })
+        .run();
+    } else {
+      balanceAfter = BigInt(identityRow.balance) + amount;
+      tx.update(identities)
+        .set({
+          balance: balanceAfter.toString(),
+          firstDepositAt: identityRow.firstDepositAt ?? creditedAt,
+        })
+        .where(eq(identities.identityId, row.identityId))
+        .run();
+    }
+    this.appendLedger(tx, row.identityId, "deposit", "deposit_credited", amount, balanceAfter, creditedAt, {
+      depositId: id,
     });
+    this.assertBalanceInvariant(tx, row.identityId);
+    return { ok: true, balanceAfterSats: balanceAfter, identityCreated };
+  }
+
+  async creditDeposit(id: number, creditedAt: number): Promise<CreditDepositResult> {
+    return this.writeTx((tx): CreditDepositResult => this.creditDepositInTx(tx, id, creditedAt));
+  }
+
+  async insertAndCreditDeposit(input: InsertDepositInput, creditedAt: number): Promise<InsertAndCreditResult> {
+    try {
+      return this.writeTx((tx): InsertAndCreditResult => {
+        const inserted = tx
+          .insert(deposits)
+          .values({
+            identityId: input.identityId,
+            amount: input.amountSats.toString(),
+            currency: input.currency,
+            txid: input.txid,
+            vout: input.vout,
+            blockHeight: input.blockHeight,
+            blockHash: input.blockHash,
+            confirmations: input.confirmations,
+            detectedAt: input.detectedAt,
+            origin: input.origin,
+            createdBy: input.createdBy ?? null,
+            note: input.note ?? null,
+          })
+          .returning()
+          .get();
+        const credited = this.creditDepositInTx(tx, inserted.id, creditedAt);
+        if (!credited.ok) {
+          // unreachable for a row inserted in this transaction — throw so the tx rolls back
+          throw new Error(`insertAndCreditDeposit: credit failed: ${credited.reason}`);
+        }
+        const row = tx.select().from(deposits).where(eq(deposits.id, inserted.id)).get();
+        return {
+          deposit: this.mapDeposit(row!),
+          balanceAfterSats: credited.balanceAfterSats,
+          identityCreated: credited.identityCreated,
+        };
+      });
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        throw new StorageError(
+          "duplicate-deposit",
+          `deposit ${input.txid}:${input.vout} already exists — use remineDeposit for re-mines`,
+        );
+      }
+      throw err;
+    }
   }
 
   async markDepositReorged(id: number, reorgedAt: number): Promise<MarkReorgedResult> {
@@ -535,6 +623,7 @@ export class SqliteStorage implements IStorage {
 
       const identityRow = tx.select().from(identities).where(eq(identities.identityId, row.identityId)).get();
       if (!identityRow) return { ok: true, wasCredited: false };
+      this.assertBalanceInvariant(tx, row.identityId);
       const balanceAfter = BigInt(identityRow.balance) - BigInt(row.amount);
       tx.update(identities)
         .set({ balance: balanceAfter.toString() })
@@ -543,6 +632,7 @@ export class SqliteStorage implements IStorage {
       this.appendLedger(tx, row.identityId, "reorg_adjust", "reorg", -BigInt(row.amount), balanceAfter, reorgedAt, {
         depositId: id,
       });
+      this.assertBalanceInvariant(tx, row.identityId);
       return { ok: true, wasCredited: true, balanceAfterSats: balanceAfter };
     });
   }

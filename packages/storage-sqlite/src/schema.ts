@@ -35,6 +35,8 @@ export const deposits = sqliteTable(
     creditedAt: integer("credited_at"),
     reorgedAt: integer("reorged_at"),
     origin: text("origin").notNull().default("real"),
+    createdBy: text("created_by"),
+    note: text("note"),
   },
   (t) => [uniqueIndex("ux_deposits_txid_vout").on(t.txid, t.vout)],
 );

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Body, Controller, HttpException, Inject, Post, UseGuards } from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
 import { z } from "zod";
 import { SimulatedDepositWatcher, type IWatcher } from "@chainvue/v402-deposit-watcher";
 import { humanAmountSchema, humanToSats, identitySchema, normalizeIdentityKey } from "@chainvue/v402-protocol";
@@ -9,9 +10,18 @@ import { parseBody } from "../api/dto.js";
 import { ReconciliationService } from "../reconciliation/reconciliation.service.js";
 import { AdminTokenGuard } from "./admin-token.guard.js";
 
+/**
+ * Balance-minting endpoints require operator attribution: /admin/* uses one
+ * shared bearer token, so "who did this" must come from the request. The
+ * value is persisted on the deposit row (`created_by`) and emitted as a
+ * structured audit log line.
+ */
+const operatorSchema = z.string().min(1).max(100);
+
 const creditBodySchema = z.object({
   identity: identitySchema,
   amount: humanAmountSchema,
+  operator: operatorSchema,
   txid: z.string().min(1).optional(),
   note: z.string().max(500).optional(),
 });
@@ -19,7 +29,9 @@ const creditBodySchema = z.object({
 const simulateDepositBodySchema = z.object({
   identity: identitySchema,
   amount: humanAmountSchema,
+  operator: operatorSchema,
   txid: z.string().min(1).optional(),
+  note: z.string().max(500).optional(),
 });
 
 /**
@@ -35,7 +47,10 @@ export class AdminController {
     @Inject(STORAGE) private readonly storage: IStorage,
     @Inject(WATCHER) private readonly watcher: IWatcher,
     @Inject(ReconciliationService) private readonly reconciliation: ReconciliationService,
-  ) {}
+    @Inject(PinoLogger) private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext("admin-audit");
+  }
 
   @Post("simulate-deposit")
   async simulateDeposit(@Body() rawBody: unknown): Promise<unknown> {
@@ -50,8 +65,21 @@ export class AdminController {
       const result = await this.watcher.simulateDeposit({
         identity: body.identity,
         amountSats: humanToSats(body.amount),
+        createdBy: body.operator,
         ...(body.txid !== undefined ? { txid: body.txid } : {}),
+        ...(body.note !== undefined ? { note: body.note } : {}),
       });
+      this.logger.info(
+        {
+          event: "admin.simulate-deposit",
+          operator: body.operator,
+          identity: result.deposit.identityId,
+          amountSats: result.deposit.amountSats.toString(),
+          depositId: result.deposit.id,
+          txid: result.deposit.txid,
+        },
+        "admin simulated deposit credited",
+      );
       return {
         ok: true,
         deposit: { id: result.deposit.id, txid: result.deposit.txid, origin: result.deposit.origin },
@@ -72,28 +100,43 @@ export class AdminController {
     const identityKey = normalizeIdentityKey(body.identity);
     const now = Math.floor(Date.now() / 1000);
     try {
-      // recorded as origin=simulated so the on-chain crosscheck never counts it
-      const deposit = await this.storage.insertDeposit({
-        identityId: identityKey,
-        amountSats: humanToSats(body.amount),
-        currency: "VRSCTEST",
-        txid: body.txid ?? `admin-credit-${randomUUID()}`,
-        vout: 0,
-        blockHeight: 0,
-        blockHash: body.note !== undefined ? `admin:${body.note}` : "admin",
-        confirmations: 0,
-        detectedAt: now,
-        origin: "simulated",
-      });
-      const credited = await this.storage.creditDeposit(deposit.id, now);
-      if (!credited.ok) {
-        throw new HttpException({ ok: false, error: { code: "credit-failed", message: credited.reason } }, 500);
-      }
+      // recorded as origin=simulated so the on-chain crosscheck never counts
+      // it; insert + credit run in ONE storage transaction — a crash can
+      // never leave a spendable-looking uncredited row behind
+      const result = await this.storage.insertAndCreditDeposit(
+        {
+          identityId: identityKey,
+          amountSats: humanToSats(body.amount),
+          currency: "VRSCTEST",
+          txid: body.txid ?? `admin-credit-${randomUUID()}`,
+          vout: 0,
+          blockHeight: 0,
+          blockHash: "admin",
+          confirmations: 0,
+          detectedAt: now,
+          origin: "simulated",
+          createdBy: body.operator,
+          ...(body.note !== undefined ? { note: body.note } : {}),
+        },
+        now,
+      );
+      this.logger.info(
+        {
+          event: "admin.credit",
+          operator: body.operator,
+          identity: identityKey,
+          amountSats: result.deposit.amountSats.toString(),
+          depositId: result.deposit.id,
+          txid: result.deposit.txid,
+          note: body.note,
+        },
+        "admin manual credit applied",
+      );
       return {
         ok: true,
-        deposit: { id: deposit.id, txid: deposit.txid, origin: deposit.origin },
+        deposit: { id: result.deposit.id, txid: result.deposit.txid, origin: result.deposit.origin },
         identity: identityKey,
-        balanceAfterSats: credited.balanceAfterSats.toString(),
+        balanceAfterSats: result.balanceAfterSats.toString(),
       };
     } catch (err) {
       if (err instanceof StorageError && err.code === "duplicate-deposit") {

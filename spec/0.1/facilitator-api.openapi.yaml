@@ -758,20 +758,31 @@ components:
 
     SimulateDepositRequest:
       type: object
-      required: [identity, amount]
+      required: [identity, amount, operator]
       properties:
         identity: { type: string }
         amount: { $ref: "#/components/schemas/HumanAmount" }
+        operator:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Operator attribution — who injected this deposit (audited).
         txid: { type: string }
+        note: { type: string, maxLength: 500 }
 
     AdminCreditRequest:
       type: object
-      required: [identity, amount]
+      required: [identity, amount, operator]
       properties:
         identity: { type: string }
         amount: { $ref: "#/components/schemas/HumanAmount" }
+        operator:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Operator attribution — who booked this credit (audited).
         txid: { type: string }
-        note: { type: string }
+        note: { type: string, maxLength: 500 }
 
     AdminCreditResponse:
       type: object

@@ -22,5 +22,6 @@ export {
   type RecordBalanceQueryResult,
   type InsertDepositInput,
   type CreditDepositResult,
+  type InsertAndCreditResult,
   type MarkReorgedResult,
 } from "./types.js";

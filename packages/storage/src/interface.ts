@@ -4,6 +4,7 @@ import type {
   CreditDepositResult,
   DepositRecord,
   IdentityRecord,
+  InsertAndCreditResult,
   InsertDepositInput,
   LateCommitResult,
   LedgerEntry,
@@ -97,6 +98,13 @@ export interface IStorage {
    * on first deposit, balance += amount, ledger `deposit/deposit_credited`.
    */
   creditDeposit(id: number, creditedAt: number): Promise<CreditDepositResult>;
+  /**
+   * Insert + credit in ONE transaction — the admin mint path
+   * (/admin/credit, simulated deposits). A crash can never leave a
+   * spendable-looking uncredited row behind. Throws
+   * StorageError("duplicate-deposit") like insertDeposit.
+   */
+  insertAndCreditDeposit(input: InsertDepositInput, creditedAt: number): Promise<InsertAndCreditResult>;
   /**
    * Reorg: mark `reorged_at`; when it was credited, balance −= amount with
    * ledger `reorg_adjust/reorg`. Balance MAY go negative — caller flags ops.

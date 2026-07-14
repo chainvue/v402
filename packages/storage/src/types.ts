@@ -44,6 +44,10 @@ export interface DepositRecord {
   creditedAt?: number;
   reorgedAt?: number;
   origin: DepositOrigin;
+  /** Operator attribution for manually minted deposits (/admin/credit, /admin/simulate-deposit). */
+  createdBy?: string;
+  /** Free-text operator note (e.g. support-case reference). */
+  note?: string;
 }
 
 export type LedgerKind = "deposit" | "debit" | "refund" | "reorg_adjust";
@@ -139,11 +143,22 @@ export interface InsertDepositInput {
   confirmations: number;
   detectedAt: number;
   origin: DepositOrigin;
+  /** Operator attribution for manually minted deposits. */
+  createdBy?: string;
+  /** Free-text operator note. */
+  note?: string;
 }
 
 export type CreditDepositResult =
   | { ok: true; balanceAfterSats: bigint; identityCreated: boolean }
   | { ok: false; reason: "not-found" | "already-credited" | "reorged" };
+
+/** Result of the atomic insert-and-credit used by the admin mint paths. */
+export interface InsertAndCreditResult {
+  deposit: DepositRecord;
+  balanceAfterSats: bigint;
+  identityCreated: boolean;
+}
 
 export type MarkReorgedResult =
   | { ok: true; wasCredited: boolean; balanceAfterSats?: bigint }
