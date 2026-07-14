@@ -35,12 +35,14 @@ are additive and run on startup.
 `verifymessage` path needs a `verusd` (gated suites skip without it).
 
 ## Releases — automated, do not hand-roll
-Conventional Commits drive **semantic-release** (multi-package; each package
-versions independently). **Never hand-bump `version` fields or edit
-`CHANGELOG.md`** — the pipeline derives both from commits. Scope commits so the
-right package releases (e.g. `fix(verifier): …`). A breaking change to a
-published API (e.g. the admin `operator` requirement) must be marked `!` /
-`BREAKING CHANGE:`. Do not `git push`, tag, or publish without an explicit ask.
+Conventional Commits drive **multi-semantic-release** (each package versions
+independently from the files a commit touches; dependents get a patch bump).
+**Never hand-bump `version` fields or edit the per-package `CHANGELOG.md`** —
+the pipeline derives both from commits. Scope commits so the right package
+releases (e.g. `fix(verifier): …`). Versioning stays **0.x**: a breaking change
+bumps the MINOR (releaseRules in `.releaserc.json`); still mark it `!` /
+`BREAKING CHANGE:` so it's recorded. Do not `git push`, tag, or publish without
+an explicit ask.
 
 ## Decision log
 `docs/RISKS.md` = maintainer-facing "why"; `CHANGELOG.md` = adopter-facing.

@@ -1,39 +1,39 @@
-# Release — publish workspace packages to npm via OIDC trusted publishing.
+# Release — automated via multi-semantic-release (Conventional Commits).
 #
-# Trigger model: MANUAL (workflow_dispatch), main only. In this monorepo the
-# packages are versioned independently and `pnpm -r publish` derives the
-# release set from "workspace version not on the registry yet" — the release
-# event is the version-bump commit on main, not a tag. A tag would have to
-# encode which of the 12 packages it covers; manual dispatch after the bump
-# commit is explicit and cannot fire by accident. Revisit (changesets +
-# push-trigger) if release cadence ever outgrows one-person dispatch.
+# Zero-touch monorepo release: every push to `main` runs multi-semantic-release,
+# which runs semantic-release per package. For each package it analyzes the
+# commits that touched it since the package's last `<name>@<version>` tag and,
+# if releasable (feat → minor, fix → patch; a BREAKING change stays 0.x → minor
+# per .releaserc.json releaseRules), computes the next version, updates that
+# package's package.json + CHANGELOG.md, publishes, tags, and creates a GitHub
+# release. Dependent packages get a patch bump to pick up the new dependency
+# versions. Private packages (apps/demo-server) are skipped. No releasable
+# commits → no-op. Preview with the workflow_dispatch dry-run.
 #
-# Auth: npm trusted publishing (OIDC) — no npm tokens anywhere. Requires the
-# one-time trusted-publisher registration on npmjs.com per package (repo
-# chainvue/v402 + workflow filename `release.yml`). `id-token: write` lets
-# pnpm (>=10.9 — native OIDC support) exchange the Actions OIDC token for a
-# short-lived publish token; provenance is generated automatically for
-# trusted publishes from public repos (NPM_CONFIG_PROVENANCE is explicit
-# belt-and-suspenders).
+# Publish: semantic-release owns versioning only; the actual publish is the
+# proven OIDC `pnpm publish` (exec plugin), per package — @semantic-release/npm
+# runs npmPublish:false so no NPM token is needed; provenance via id-token:write.
+# The one-time trusted-publisher registration (per package, repo chainvue/v402,
+# workflow release.yml) still applies.
 #
-# Deliberately NO `registry-url` on setup-node: it writes an .npmrc line
-# `_authToken=${NODE_AUTH_TOKEN}` which breaks when the env var is unset —
-# and with OIDC there is no token. pnpm publishes to registry.npmjs.org by
-# default.
+# CUTOVER (one-time): push the per-package baseline tags (`<name>@<version>` at
+# the last-published version) BEFORE the first main push, or every package is
+# treated as a first release and jumps to 1.0.0. --sequential-init serializes
+# per-package initialization to avoid collisions.
 #
-# Process rule (docs/RISKS.md, Etappe 1.5): after every publish, a
-# from-registry install smoke — the `smoke` job installs every published
-# package at its workspace version from the PUBLIC registry into a fresh
-# project and imports it. Catches stale-dependency publishes (the
-# conformance-suite@0.1.0 / signer-verus@0.1.0 incident) that workspace
-# resolution masks locally.
+# Security: this job holds id-token:write (npm publish rights). Actions are
+# SHA-pinned (tag-hijack defense); token scope is least-privilege (contents +
+# id-token; github-plugin comments/labels disabled in .releaserc.json). `main`
+# must let GITHUB_TOKEN push the per-package release commits + tags.
 name: Release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Dry run: build, test and pack, but do not publish"
+        description: "Dry run: compute per-package versions + notes, but do not publish or tag"
         type: boolean
         default: false
 
@@ -45,18 +45,19 @@ permissions: {}
 
 jobs:
   release:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
-      contents: read
-      id-token: write # OIDC token for npm trusted publishing
+      contents: write # semantic-release pushes per-package release commits + tags
+      id-token: write # OIDC token for npm trusted publishing (provenance)
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0 # full history + tags: semantic-release needs them
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 26
           cache: pnpm
@@ -70,30 +71,32 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Lint
+        run: pnpm lint
+
       - name: Test
         run: pnpm test
 
-      # Publishes every non-private workspace package whose version is not on
-      # the registry yet, in dependency (topological) order. --no-git-checks:
-      # Actions checks out a detached HEAD, which pnpm's branch check rejects.
-      - name: Publish
+      - name: Release
         run: >-
-          pnpm -r publish --no-git-checks
-          ${{ inputs.dry_run && '--dry-run' || '' }}
+          pnpm exec multi-semantic-release
+          --ignore-private-packages --sequential-init
+          ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
 
   smoke:
     needs: release
-    if: ${{ !inputs.dry_run }}
+    if: ${{ github.event_name == 'push' || !inputs.dry_run }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 26
           # This job is npm-only; without this, setup-node sees the workspace
