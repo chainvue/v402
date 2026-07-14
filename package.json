@@ -5,7 +5,7 @@
   "type": "module",
   "description": "v402 — Verus-native payment layer for AI-agent APIs. Monorepo root: spec (CC-BY-4.0) + reference implementation (Apache-2.0).",
   "license": "Apache-2.0",
-  "author": "Robert Lech (chainvue)",
+  "author": "Robert Lech",
   "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=22",
