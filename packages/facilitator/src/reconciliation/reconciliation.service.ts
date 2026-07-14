@@ -80,7 +80,11 @@ export class ReconciliationService {
       onChain = {
         available: true,
         creditedDepositSats: (await this.storage.sumCreditedDeposits({ excludeSimulated: true })).toString(),
-        // float→sats via string round-trip; advisory figure, exactness not required
+        // ADVISORY ONLY: chainCoins arrives as a JSON float from the RPC, so
+        // this figure is inexact by construction and never counted as a
+        // mismatch. If this crosscheck is ever promoted to a hard check, the
+        // FIRST prerequisite is an exact chain-side amount source (e.g.
+        // getaddressutxos satoshi sums), not this float round-trip.
         chainBalanceSats: humanToSats(chainCoins.toFixed(8).replace(/0+$/, "").replace(/\.$/, "") || "0").toString(),
       };
     } catch {

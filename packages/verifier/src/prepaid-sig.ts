@@ -126,6 +126,20 @@ export class VerusPrepaidSigVerifier implements SchemeVerifier {
   }
 
   async verifyAndReserve(request: IncomingPaymentRequest, policy: RoutePolicy): Promise<VerifyAndReserveResult> {
+    // Replay short-circuit BEFORE the expensive checks: a requestId that is
+    // already burned can only ever produce `replay`, so answer from the local
+    // DB without spending a verifymessage RPC on it. Duplicate requests would
+    // otherwise each cost a full RPC — an amplification lever for anyone
+    // holding a captured (already-spent) signed request. reservePayment still
+    // re-checks atomically, so this is purely an optimization, not the guard.
+    const preParsed = parsePaymentHeaders(request.headers);
+    if (preParsed.ok) {
+      const existing = await this.storage.getSpentRequest(preParsed.claim.requestId);
+      if (existing !== undefined) {
+        return fail(409, "replay", "requestId already spent", { previousStatus: existing.status });
+      }
+    }
+
     const checked = await this.runChecks(request, policy);
     if (!checked.ok) return checked;
     const { claim, identityKey, receivedAt } = checked;

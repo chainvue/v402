@@ -95,7 +95,11 @@ export class PaymentsController {
     stop();
     this.requestsTotal.inc({ scheme: verifier.scheme, status: result.ok ? "reserved" : result.error.code });
     if (!result.ok) throwVerifyError(result.error);
-    this.balanceDebited.inc(Number(result.amountSats));
+    // Metric-only coercion: Number() loses exactness above 2^53 sats. Clamp
+    // instead of overflowing — the ledger, not this counter, is accounting.
+    this.balanceDebited.inc(
+      result.amountSats > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(result.amountSats),
+    );
     return {
       ok: true,
       requestId: result.requestId,
