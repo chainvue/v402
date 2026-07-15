@@ -16,7 +16,8 @@ useDefault = true
 description = "Published VRSCTEST test-vector keys/addresses (key A/B, identity v402test@) — no mainnet value; see spec/0.1/test-vectors/signing.json"
 regexTarget = "secret"
 regexes = [
-  '''Uw81VDAH8zrv''',
-  '''RXzn488JQaeE''',
-  '''RLjrXPziU4Mo''',
+  '''Uw81VDAH8zrv''', # key A WIF
+  '''UsLMFdPY9H''',   # key B WIF
+  '''RXzn488JQaeE''', # key A address
+  '''RLjrXPziU4Mo''', # key B address
 ]
