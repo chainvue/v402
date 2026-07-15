@@ -64,21 +64,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      # Fail on known-vulnerable dependencies (custody service — supply chain
-      # is in scope). Moderate+ only, to avoid noise from low-severity advisories
-      # in dev-only tooling; raise to `low` once the tree is clean.
-      - name: Audit dependencies
-        run: pnpm audit --audit-level moderate --prod
+      # Dependency vulnerability scan via OSV (osv.dev), reading pnpm-lock.yaml
+      # directly — custody service, supply chain is in scope. Replaces
+      # `pnpm audit`, whose npm quick-audit endpoint npm retired (HTTP 410).
+      # osv-scanner is free + maintained by Google and fails the job on a
+      # known-vulnerable dependency. The release lookup is token-authenticated
+      # to dodge the unauthenticated GitHub API rate limit.
+      - name: Audit dependencies (osv-scanner)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          url="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/google/osv-scanner/releases/latest \
+            | grep -oE '"browser_download_url": *"[^"]*osv-scanner[^"]*linux_amd64"' \
+            | sed -E 's/.*"(https[^"]+)".*/\1/' | head -1)"
+          curl -fsSL "$url" -o osv-scanner
+          chmod +x osv-scanner
+          ./osv-scanner --lockfile=pnpm-lock.yaml
 
   secret-scan:
     runs-on: ubuntu-latest
@@ -88,10 +91,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Scan the full history for committed secrets (admin tokens, WIFs, RPC
-      # credentials). Runs on PRs and pushes; the action fails the job on a
-      # verified finding.
-      - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
+      # Full-history secret scan (admin tokens, WIFs, RPC credentials). Uses the
+      # free gitleaks CLI binary directly: the gitleaks GitHub Action now
+      # requires a paid GITLEAKS_LICENSE for orgs, but the CLI itself stays
+      # MIT/free. Fails the job on any finding.
+      - name: Secret scan (gitleaks CLI)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          url="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
+            | grep -oE '"browser_download_url": *"[^"]*linux_x64\.tar\.gz"' \
+            | sed -E 's/.*"(https[^"]+)".*/\1/' | head -1)"
+          curl -fsSL "$url" | tar -xzf - gitleaks
+          chmod +x gitleaks
+          ./gitleaks detect --source . --redact --no-banner --exit-code 1
