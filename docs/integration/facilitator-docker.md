@@ -43,7 +43,7 @@ docker run -p 3000:3000 \
 |---|---|---|
 | `FACILITATOR_AUTH_TOKEN` | Basic-auth token for middleware clients (`/v1/*` payment API). Empty = HTTP API disabled (fail closed) | — (required for http mode) |
 | `V402_ADMIN_TOKEN` | Bearer token for `/admin/*`. Empty = admin API disabled | — |
-| `VERUS_RPC_URL/_USER/_PASS` | Verus daemon (signature verify + watcher) | url defaults to the LAN dev node |
+| `VERUS_RPC_URL/_USER/_PASS` | Verus daemon (signature verify + watcher) | required; point at your own `verusd` (localhost in dev) |
 | `V402_CHAIN` | network id (M3, canonical field) | `vrsctest` |
 | `V402_PAY_TO` | receiving identity = deposit address (MUST be a registered on-chain identity) | `v402-facilitator@` |
 | `V402_CANONICAL_DOMAIN` | domain payments are signed against — must equal what the API advertises | `localhost:3001` |

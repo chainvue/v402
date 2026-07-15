@@ -6,8 +6,8 @@ and theme (`## <date> — <theme>`) with a `### <package> <old> → <new>`
 subsection per changed package; the release workflow publishes any package
 whose version is not yet on the registry. Record changes under **[Unreleased]**
 as you make them. Data/spec packages (`test-vectors`, the protocol spec) are
-versioned separately. This file is adopter-facing ("what changed, what breaks")
-— design rationale lives in `docs/RISKS.md`.
+versioned separately. This file is adopter-facing ("what changed, what breaks");
+design rationale is maintained privately.
 
 ## [Unreleased]
 
@@ -16,8 +16,8 @@ versioned separately. This file is adopter-facing ("what changed, what breaks")
 
 ## 2026-07-14 — custody hardening
 
-Right-sized hardening of the custody core (see `docs/RISKS.md` for the full
-decision log). No changes to the money model — sats stay `bigint` end-to-end.
+Right-sized hardening of the custody core. No changes to the money model — sats
+stay `bigint` end-to-end.
 
 ### `@chainvue/v402-storage` 0.2.0 → 0.3.0 (minor)
 - **New** `IStorage.insertAndCreditDeposit(input, creditedAt)`: books a deposit

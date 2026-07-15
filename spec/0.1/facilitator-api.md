@@ -1,6 +1,6 @@
 # Facilitator HTTP API — v402/0.1
 
-**Status:** DRAFT (normative content, tracking the reference implementation).
+**Status:** Normative (frozen 2026-07-10; tracks the reference implementation).
 Semantics locked by the reference test suites; wording may still be edited.
 
 The facilitator is the payment-infrastructure service between customer and

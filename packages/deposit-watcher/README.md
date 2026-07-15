@@ -15,7 +15,7 @@ npm install @chainvue/v402-deposit-watcher
 
 ## Good to know
 
-- Shielded funding has no transparent vins → flagged for manual reconciliation (by design; see [docs/RISKS.md](https://github.com/chainvue/v402/blob/main/docs/RISKS.md)).
+- Shielded funding has no transparent vins → flagged for manual reconciliation (by design).
 - Amounts use the daemon's exact `valueSat`.
 
 ## License

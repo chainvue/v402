@@ -47,4 +47,5 @@ versions are NOT the source of truth; the tags + npm are. Do not `git push`,
 tag, or publish without an explicit ask.
 
 ## Decision log
-`docs/RISKS.md` = maintainer-facing "why"; `CHANGELOG.md` = adopter-facing.
+The maintainer-facing "why" (risks, decisions) is kept **privately, outside
+this repo**; `CHANGELOG.md` is the adopter-facing "what".

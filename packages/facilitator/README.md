@@ -26,7 +26,6 @@ import { AppModule, buildConfig, facilitatorConfigSchema } from "@chainvue/v402-
 ## Good to know
 
 - API contract: [`spec/0.1/facilitator-api.md`](https://github.com/chainvue/v402/blob/main/spec/0.1/facilitator-api.md) (normative, including the frozen error catalog).
-- Operational notes and known boundaries: [docs/RISKS.md](https://github.com/chainvue/v402/blob/main/docs/RISKS.md).
 
 ## License
 

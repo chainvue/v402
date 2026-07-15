@@ -106,8 +106,7 @@ pnpm build && pnpm typecheck && pnpm lint && pnpm test
 `docker-compose.yml` boots the facilitator + demo-server pair; the contributor
 path uses simulated deposits and needs no Verus node. Node-gated integration
 tests skip cleanly without `VERUS_RPC_URL`. Integration guides:
-[`docs/integration/`](./docs/integration/); decisions and risks:
-[`docs/RISKS.md`](./docs/RISKS.md).
+[`docs/integration/`](./docs/integration/).
 
 ## Licensing
 

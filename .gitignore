@@ -22,5 +22,8 @@ coverage/
 # Internal planning document — deliberately untracked (history-purged before the first public push)
 PLAN.md
 
+# Internal maintainer risk/decision log — kept locally, outside the public repo
+docs/RISKS.md
+
 # Personal Claude Code settings
 .claude/settings.local.json
