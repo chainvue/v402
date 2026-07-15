@@ -81,7 +81,7 @@ jobs:
             | sed -E 's/.*"(https[^"]+)".*/\1/' | head -1)"
           curl -fsSL "$url" -o osv-scanner
           chmod +x osv-scanner
-          ./osv-scanner --lockfile=pnpm-lock.yaml
+          ./osv-scanner --config=osv-scanner.toml --lockfile=pnpm-lock.yaml
 
   secret-scan:
     runs-on: ubuntu-latest
@@ -106,4 +106,6 @@ jobs:
             | sed -E 's/.*"(https[^"]+)".*/\1/' | head -1)"
           curl -fsSL "$url" | tar -xzf - gitleaks
           chmod +x gitleaks
-          ./gitleaks detect --source . --redact --no-banner --exit-code 1
+          # -v prints each finding (file/line/rule/commit); --redact keeps
+          # secret values out of the log.
+          ./gitleaks detect --source . --redact --no-banner -v --exit-code 1

@@ -1,0 +1,12 @@
+# osv-scanner ignore list — each entry is a documented, reviewed exception, not
+# a blanket suppression. Revisit on dependency bumps.
+
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+# esbuild dev-server SSRF (CVSS 5.3, fixed in esbuild >= 0.25.0). Reached only
+# via drizzle-kit's deprecated @esbuild-kit/core-utils build-time config loader
+# (transitive), which pins esbuild 0.18.20 and NEVER starts the esbuild dev
+# server (`esbuild serve`) — the only vector for this advisory. Not exploitable
+# in this repo's build / CI / production paths. Remove this entry when
+# drizzle-kit drops @esbuild-kit (merged upstream into tsx) or the pin lifts.
+reason = "esbuild dev-server SSRF unreachable: drizzle-kit's build-time config loader never runs the esbuild dev server; no prod/CI exposure."
