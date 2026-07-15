@@ -106,6 +106,6 @@ jobs:
             | sed -E 's/.*"(https[^"]+)".*/\1/' | head -1)"
           curl -fsSL "$url" | tar -xzf - gitleaks
           chmod +x gitleaks
-          # -v prints each finding (file/line/rule/commit); --redact keeps
-          # secret values out of the log.
-          ./gitleaks detect --source . --redact --no-banner -v --exit-code 1
+          # .gitleaks.toml allowlists only the published VRSCTEST test-vector
+          # keys; any other secret still fails. --redact keeps values out of logs.
+          ./gitleaks detect --source . --config .gitleaks.toml --redact --no-banner --exit-code 1

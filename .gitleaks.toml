@@ -1,0 +1,22 @@
+# gitleaks config — extends the default rules and adds ONE targeted allowlist.
+#
+# The custody repo hardcodes a PUBLISHED VRSCTEST test-vector key set (key A/B
+# for identity `v402test@`) across the offline signing/verification tests, the
+# height-probe script, and spec/0.1/test-vectors/signing.json. These are
+# throwaway TESTNET keys with NO mainnet value — deliberately public as conformance
+# vectors, not production secrets. They are allowlisted by their exact value, so
+# any OTHER high-entropy secret ever committed still trips the scan.
+
+title = "v402"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Published VRSCTEST test-vector keys/addresses (key A/B, identity v402test@) — no mainnet value; see spec/0.1/test-vectors/signing.json"
+regexTarget = "secret"
+regexes = [
+  '''Uw81VDAH8zrv''',
+  '''RXzn488JQaeE''',
+  '''RLjrXPziU4Mo''',
+]
