@@ -1,0 +1,93 @@
+# Dependabot for the v402 monorepo.
+#
+# Ecosystems found in the repo:
+# - npm at "/" — pnpm workspace (pnpm-workspace.yaml covers packages/* and
+#   apps/*), so one entry at the root updates every workspace package through
+#   the single pnpm-lock.yaml. No per-package entries: they would fight over
+#   the same lockfile.
+# - docker at "/docker" — demo-server, facilitator and proxy Dockerfiles, all
+#   on a node base image tag.
+# - github-actions at "/" — ci.yml and release.yml, SHA-pinned.
+#
+# Commit-message prefixes follow the repo's semantic-release setup (angular
+# preset), as in chainvue/verus-rpc: runtime -> fix(deps), dev ->
+# chore(deps-dev), actions -> ci(deps).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+    groups:
+      # Peer-coupled families, grouped so a bump cannot land half-applied.
+      # The concrete incident: in peculium-wallet Dependabot bumped `vitest`
+      # and left `@vitest/coverage-v8` on the old major; the peer mismatch
+      # broke CI. Same shape of breakage applies to every group below.
+      vitest:
+        patterns:
+          - vitest
+          - "@vitest/*"
+          - vite
+      eslint:
+        patterns:
+          - eslint
+          - "@eslint/*"
+          - typescript-eslint
+          - "@typescript-eslint/*"
+          - globals
+          - typescript
+      # NestJS: @nestjs/* packages peer-depend on each other and on
+      # reflect-metadata and rxjs. A single package moving to a new major puts
+      # the whole DI container out of step, across several workspace packages
+      # at once.
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+          - reflect-metadata
+          - rxjs
+      # drizzle-kit generates against drizzle-orm's schema API, and
+      # better-sqlite3 has to match its own @types package.
+      drizzle-sqlite:
+        patterns:
+          - drizzle-orm
+          - drizzle-kit
+          - better-sqlite3
+          - "@types/better-sqlite3"
+      # semantic-release plugins are pinned to the core's plugin API, and
+      # multi-semantic-release wraps that same core.
+      semantic-release:
+        patterns:
+          - semantic-release
+          - "@semantic-release/*"
+          - multi-semantic-release
+      dev-dependencies:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+    ignore:
+      # Same gate as chainvue/verus-rpc: TypeScript majors are held back by
+      # typescript-eslint's peer range (`>=4.8.4 <6.1.0` as of 8.6x), so a TS 7
+      # bump would fail lint and the PR could never go green.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker
+    directory: "/docker"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: fix
+      include: scope
